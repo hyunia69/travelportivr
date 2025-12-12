@@ -2400,19 +2400,19 @@ CKICC_Scenario::~CKICC_Scenario()
 {
 	if (m_hThread)
 	{
-		xprintf("[CH:%03d] CKICC_Scenario DB Access 동작 중.... ", nChan);
+		eprintf("CKICC_Scenario DB Access 동작 중....");
 		::WaitForSingleObject(m_hThread, INFINITE);
 		CloseHandle(m_hThread);
 		m_hThread = NULL;
-		xprintf("[CH:%03d] CKICC_Scenario DB Access 중지.... ", nChan);
+		eprintf("CKICC_Scenario DB Access 중지....");
 	}
 	if (m_hPayThread)
 	{
-		xprintf("[CH:%03d] CKICC_Scenario PAYMENT 동작 중.... ", nChan);
+		eprintf("CKICC_Scenario PAYMENT 동작 중....");
 		::WaitForSingleObject(m_hPayThread, INFINITE);
 		CloseHandle(m_hPayThread);
 		m_hPayThread = NULL;
-		xprintf("[CH:%03d] CKICC_Scenario PAYMENT 중지.... ", nChan);
+		eprintf("CKICC_Scenario PAYMENT 중지....");
 	}
 	if (m_Myport) m_Myport->ppftbl[POST_NET].postcode = HI_OK;
 }

@@ -47,7 +47,6 @@ extern char gNiceDebug[10 + 1];
 extern char gNiceLog[50 + 1];
 
 extern void(*eprintf)(const char *str, ...);
-extern void(*xprintf)(const char *str, ...);
 extern LPMTP **lpmt , **port;
 
 //LPMTP	*curyport=NULL;
@@ -196,7 +195,7 @@ int Kicc_Install()
 
 	if (g_KicchDll == NULL)
 	{
-		xprintf("LoadLibrary null");
+		eprintf("LoadLibrary null");
 		return -1;
 	}
 
@@ -206,7 +205,7 @@ int Kicc_Install()
 
 	if (lplfEP_CLI_DLL__init == NULL)
 	{
-		xprintf("lplfEP_CLI_DLL__init null");
+		eprintf("lplfEP_CLI_DLL__init null");
 		return -1;
 	}
 
@@ -214,7 +213,7 @@ int Kicc_Install()
 
 	if (lplfEP_CLI_DLL__set_plan_data == NULL)
 	{
-		xprintf("lplfEP_CLI_DLL__set_plan_data null");
+		eprintf("lplfEP_CLI_DLL__set_plan_data null");
 		return -1;
 	}
 
@@ -222,7 +221,7 @@ int Kicc_Install()
 
 	if (lplfEP_CLI_DLL__set_entry == NULL)
 	{
-		xprintf("lplfEP_CLI_DLL__set_entry null");
+		eprintf("lplfEP_CLI_DLL__set_entry null");
 		return -1;
 	}
 
@@ -230,7 +229,7 @@ int Kicc_Install()
 
 	if (lplfEP_CLI_DLL__set_delim == NULL)
 	{
-		xprintf("lplfEP_CLI_DLL__set_delim null");
+		eprintf("lplfEP_CLI_DLL__set_delim null");
 		return -1;
 	}
 
@@ -238,7 +237,7 @@ int Kicc_Install()
 
 	if (lplfEP_CLI_DLL__set_value == NULL)
 	{
-		xprintf("lplfEP_CLI_DLL__set_value null");
+		eprintf("lplfEP_CLI_DLL__set_value null");
 		return -1;
 	}
 
@@ -246,7 +245,7 @@ int Kicc_Install()
 
 	if (lplfEP_CLI_DLL__proc == NULL)
 	{
-		xprintf("lplfEP_CLI_DLL__proc null");
+		eprintf("lplfEP_CLI_DLL__proc null");
 		return -1;
 	}
 
@@ -254,7 +253,7 @@ int Kicc_Install()
 
 	if (lplfEP_CLI_DLL__get_value == NULL)
 	{
-		xprintf("lplfEP_CLI_DLL__get_value null");
+		eprintf("lplfEP_CLI_DLL__get_value null");
 		return -1;
 	}
 
@@ -271,7 +270,7 @@ int Kicc_UnInstall()
 /* ------------------------------------------------------------------------ */
 void KiccNone_Pay_Quithostio(char *p, int ch)
 {
-	xprintf("[CH:%03d] PAYquithostio===START", ch);
+	eprintf("PAYquithostio===START");
 	if (!in_multifunc(ch))
 	{
 		Sleep(500);
@@ -280,8 +279,8 @@ void KiccNone_Pay_Quithostio(char *p, int ch)
 	if ((*port)[ch].used != L_IDLE && in_multifunc(ch))
 		quitchan(ch);
 
-	xprintf("[CH:%03d] %s", ch, p);
-	xprintf("[CH:%03d] PAYquithostio _endthread", ch);
+	eprintf("%s", p);
+	eprintf("PAYquithostio _endthread");
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -368,7 +367,7 @@ int FindWebAddresss(int ch, char * szAuthLine)
 
 	if (szAuthLine[0])               // Userid/ password specified?
 	{
-		xprintf("[CH:%03d] FindWebAddresss>szAuthLine (%s)", ch, szAuthLine);
+		eprintf("FindWebAddresss>szAuthLine (%s)", szAuthLine);
 		pFile->AddRequestHeaders(szAuthLine, HTTP_ADDREQ_FLAG_ADD, strlen(szAuthLine));
 	}
 
@@ -376,12 +375,12 @@ int FindWebAddresss(int ch, char * szAuthLine)
 	try
 	{
 		// 페이지를 요청한다.
-		xprintf("[CH:%03d] FindWebAddresss>pFile->SendRequest(NULL)", ch);
+		eprintf("FindWebAddresss>pFile->SendRequest(NULL)");
 		bResult = pFile->SendRequest(NULL);
 	}
 	catch (CInternetException* pEx)
 	{
-		xprintf("[CH:%03d] FindWebAddresss>Exception", ch);
+		eprintf("FindWebAddresss>Exception");
 
 		pEx->Delete();
 
@@ -396,7 +395,7 @@ int FindWebAddresss(int ch, char * szAuthLine)
 		return 0;
 	}
 
-	xprintf("[CH:%03d] FindWebAddresss>QueryInfoStatusCode", ch);
+	eprintf("FindWebAddresss>QueryInfoStatusCode");
 	// 요청 된 결과 페이지를 쿼리한다.
 	pFile->QueryInfoStatusCode(dwRet);
 
@@ -405,7 +404,7 @@ int FindWebAddresss(int ch, char * szAuthLine)
 		char *q = p;
 		memset(p, 0x00, 1024 + 1);
 		pFile->Read(p, 1024);// 해당 리턴된 URL를 읽어드린다.
-		xprintf("[CH:%03d] FindWebAddresss>pFile->Read(p:%s, 1024) ", ch, p);
+		eprintf("FindWebAddresss>pFile->Read(p:%s, 1024) ", p);
 
 		dwIPNr = 0;
 		while (*p) {
@@ -418,7 +417,7 @@ int FindWebAddresss(int ch, char * szAuthLine)
 				memmove(&inAddr, &dwIPNr, 4);
 				sAddr = inet_ntoa(inAddr);
 				sprintf_s(szTemp, sizeof(szTemp), "%s", sAddr);
-				xprintf("[CH:%03d] FindWebAddresss>sprintf_s(szTemp:%s, sAddr:%s);", ch, szTemp, sAddr);
+				eprintf("FindWebAddresss>sprintf_s(szTemp:%s, sAddr:%s);", szTemp, sAddr);
 				WebIP = szTemp;
 			}
 		}
@@ -436,9 +435,9 @@ int FindWebAddresss(int ch, char * szAuthLine)
 	if (strlen(szTemp)>1 && strlen(szTemp)<16)
 		memcpy(szAuthLine, szTemp, strlen(szTemp));
 
-	xprintf("[CH:%03d] FindWebAddresss>memcpy(szAuthLine:%s, szTemp:%s, strlen(szTemp))", ch, szAuthLine, szTemp);
+	eprintf("FindWebAddresss>memcpy(szAuthLine:%s, szTemp:%s, strlen(szTemp))", szAuthLine, szTemp);
 
-	xprintf("[CH:%03d] FindWebAddresss>retrrn : %d", ch, dwRet);
+	eprintf("FindWebAddresss>return : %d", dwRet);
 	return dwRet;
 }
 
@@ -459,7 +458,7 @@ unsigned int __stdcall KiccArsPayProcess(void *data)
 		pScenario->m_PaySysCd = -1;
 		(*port)[ch].ppftbl[POST_NET].postcode = HI_COMM;
 		KiccNone_Pay_Quithostio("KiccArsPayProcess the line service is not valid any more.", ch);
-		xprintf("[CH:%03d] KiccArsPayProcess END", ch);
+		eprintf("KiccArsPayProcess END");
 		_endthreadex((unsigned int)pScenario->m_hPayThread);
 		return 0;
 	}
@@ -476,19 +475,19 @@ unsigned int __stdcall KiccArsPayProcess(void *data)
 
 	GetPrivateProfileString("KICCPAY", "KICC_GW_URL", KICC_GW_URL, szGwUrl, sizeof(szGwUrl), PARAINI);
 	GetPrivateProfileString("KICCPAY", "KICC_GW_PORT", KICC_GW_PORT, szGWport, sizeof(szGWport), PARAINI);
-	
+
 	// 게이트웨이 URL 확인 로그
-	eprintf("[CH:%03d] [KICC] 게이트웨이 URL: %s, 포트: %s", ch, szGwUrl, szGWport);
-	
+	eprintf("[KICC] 게이트웨이 URL: %s, 포트: %s", szGwUrl, szGWport);
+
 	// [MODIFIED] 설정 파일에서 IP 읽기 (빠른 처리)
 	GetPrivateProfileString("KICCPAY", "KICC_CLIENT_IP", KICC_CLIENT_IP, szClientIP, sizeof(szClientIP), PARAINI);
 	// 설정 파일에 IP가 없거나 비어있을 경우에만 웹에서 조회
 	if (strlen(szClientIP) == 0) {
-		xprintf("[CH:%03d] KICC_CLIENT_IP not found in config, trying web lookup...", ch);
+		eprintf("KICC_CLIENT_IP not found in config, trying web lookup...");
 		FindWebAddresss(ch, szClientIP);
 	}
 	else {
-		xprintf("[CH:%03d] Using KICC_CLIENT_IP from config: %s", ch, szClientIP);
+		eprintf("Using KICC_CLIENT_IP from config: %s", szClientIP);
 	}
 
 	GetPrivateProfileString("KICCPAY", "KICC_MAII_ID", KICC_MAII_ID, szMallid, sizeof(szMallid), PARAINI);
@@ -525,7 +524,7 @@ unsigned int __stdcall KiccArsPayProcess(void *data)
 		pScenario->m_PaySysCd = -1;
 		(*port)[ch].ppftbl[POST_NET].postcode = HI_COMM;
 		KiccNone_Pay_Quithostio("KiccArsPayProcess the line service is not valid any more-lplfEP_CLI_DLL__init.", ch);
-		xprintf("[CH:%03d] KiccArsPayProcess END", ch);
+		eprintf("KiccArsPayProcess END");
 		_endthreadex((unsigned int)pScenario->m_hPayThread);
 		return 0;
 	}
@@ -535,36 +534,34 @@ unsigned int __stdcall KiccArsPayProcess(void *data)
 	// ========================================
 	if (pScenario->m_bUseDbCardInfo) {
 		info_printf(ch, "[KICC] DB 기반 결제 시작");
-		info_printf(ch, "[KICC] 카드번호: %s (길이: %d)",
+		eprintf("[KICC] DB 기반 결제 시작: 카드번호=%s(길이:%d), 유효기간=%s, 할부개월=%s",
 			pScenario->m_CardInfo.Card_Num,
-			strlen(pScenario->m_CardInfo.Card_Num));
-		info_printf(ch, "[KICC] 유효기간: %s", pScenario->m_CardInfo.ExpireDt);
-		info_printf(ch, "[KICC] 할부개월: %s", pScenario->m_CardInfo.InstPeriod);
+			strlen(pScenario->m_CardInfo.Card_Num),
+			pScenario->m_CardInfo.ExpireDt,
+			pScenario->m_CardInfo.InstPeriod);
 
 		// 카드번호 길이 검증
 		if (strlen(pScenario->m_CardInfo.Card_Num) != 16) {
+			info_printf(ch, "[KICC] 카드번호 길이 오류");
 			eprintf("[KICC] 카드번호 길이 오류: %d자리 (기대: 16자리)",
-				strlen(pScenario->m_CardInfo.Card_Num));
-			info_printf(ch, "[KICC] 카드번호 길이 오류: %d자리 (기대: 16자리)",
 				strlen(pScenario->m_CardInfo.Card_Num));
 			(*port)[ch].ppftbl[POST_NET].postcode = HI_OK;
 			pScenario->m_PaySysCd = -1;
 			KiccNone_Pay_Quithostio("KiccArsPayProcess 카드번호 길이 오류", ch);
-			xprintf("[CH:%03d] KiccArsPayProcess END", ch);
+			eprintf("KiccArsPayProcess END");
 			_endthreadex((unsigned int)pScenario->m_hPayThread);
 			return 0;
 		}
 
 		// 유효기간 형식 검증
 		if (strlen(pScenario->m_CardInfo.ExpireDt) != 4) {
+			info_printf(ch, "[KICC] 유효기간 형식 오류");
 			eprintf("[KICC] 유효기간 형식 오류: %s (기대: YYMM)",
-				pScenario->m_CardInfo.ExpireDt);
-			info_printf(ch, "[KICC] 유효기간 형식 오류: %s (기대: YYMM)",
 				pScenario->m_CardInfo.ExpireDt);
 			(*port)[ch].ppftbl[POST_NET].postcode = HI_OK;
 			pScenario->m_PaySysCd = -1;
 			KiccNone_Pay_Quithostio("KiccArsPayProcess 유효기간 형식 오류", ch);
-			xprintf("[CH:%03d] KiccArsPayProcess END", ch);
+			eprintf("KiccArsPayProcess END");
 			_endthreadex((unsigned int)pScenario->m_hPayThread);
 			return 0;
 		}
@@ -578,23 +575,23 @@ unsigned int __stdcall KiccArsPayProcess(void *data)
 				if (nInstall >= 0 && nInstall <= 12) {
 					memset(pScenario->m_CardInfo.InstPeriod, 0x00, sizeof(pScenario->m_CardInfo.InstPeriod));
 					sprintf(pScenario->m_CardInfo.InstPeriod, "%02d", nInstall);
-					xprintf("[CH:%03d] [KICC] 할부개월이 비어있어 DB 값으로 설정: %s", ch, pScenario->m_CardInfo.InstPeriod);
-					info_printf(ch, "[KICC] 할부개월이 비어있어 DB 값으로 설정: %s", pScenario->m_CardInfo.InstPeriod);
+					info_printf(ch, "[KICC] 할부개월 DB값 설정: %s", pScenario->m_CardInfo.InstPeriod);
+					eprintf("[KICC] 할부개월이 비어있어 DB 값으로 설정: %s", pScenario->m_CardInfo.InstPeriod);
 				}
 				else {
 					// DB 값이 범위를 벗어난 경우 기본값 사용
 					memset(pScenario->m_CardInfo.InstPeriod, 0x00, sizeof(pScenario->m_CardInfo.InstPeriod));
 					strncpy(pScenario->m_CardInfo.InstPeriod, "00", sizeof(pScenario->m_CardInfo.InstPeriod) - 1);
-					xprintf("[CH:%03d] [KICC] DB 할부개월 범위 오류, 기본값(일시불)으로 설정: %s", ch, pScenario->m_CardInfo.InstPeriod);
-					info_printf(ch, "[KICC] DB 할부개월 범위 오류, 기본값(일시불)으로 설정: %s", pScenario->m_CardInfo.InstPeriod);
+					info_printf(ch, "[KICC] 할부개월 기본값 설정: %s", pScenario->m_CardInfo.InstPeriod);
+					eprintf("[KICC] DB 할부개월 범위 오류, 기본값(일시불)으로 설정: %s", pScenario->m_CardInfo.InstPeriod);
 				}
 			}
 			else {
 				// DB 값도 없는 경우 기본값 사용
 				memset(pScenario->m_CardInfo.InstPeriod, 0x00, sizeof(pScenario->m_CardInfo.InstPeriod));
 				strncpy(pScenario->m_CardInfo.InstPeriod, "00", sizeof(pScenario->m_CardInfo.InstPeriod) - 1);
-				xprintf("[CH:%03d] [KICC] 할부개월이 비어있어 기본값(일시불)으로 설정: %s", ch, pScenario->m_CardInfo.InstPeriod);
-				info_printf(ch, "[KICC] 할부개월이 비어있어 기본값(일시불)으로 설정: %s", pScenario->m_CardInfo.InstPeriod);
+				info_printf(ch, "[KICC] 할부개월 기본값 설정: %s", pScenario->m_CardInfo.InstPeriod);
+				eprintf("[KICC] 할부개월이 비어있어 기본값(일시불)으로 설정: %s", pScenario->m_CardInfo.InstPeriod);
 			}
 		}
 
@@ -604,17 +601,17 @@ unsigned int __stdcall KiccArsPayProcess(void *data)
 			// 범위를 벗어난 경우 기본값(일시불)으로 설정
 			memset(pScenario->m_CardInfo.InstPeriod, 0x00, sizeof(pScenario->m_CardInfo.InstPeriod));
 			strncpy(pScenario->m_CardInfo.InstPeriod, "00", sizeof(pScenario->m_CardInfo.InstPeriod) - 1);
-			xprintf("[CH:%03d] [KICC] 할부개월 범위 오류로 기본값(일시불)으로 설정: 원래값 범위 초과 (범위: 00~12)", ch);
-			info_printf(ch, "[KICC] 할부개월 범위 오류로 기본값(일시불)으로 설정: 원래값 범위 초과 (범위: 00~12)");
+			info_printf(ch, "[KICC] 할부개월 기본값 설정");
+			eprintf("[KICC] 할부개월 범위 오류로 기본값(일시불)으로 설정: 원래값 범위 초과 (범위: 00~12)");
 		}
 
-		// 결제 데이터 전송 직전 로그
-		info_printf(ch, "[KICC] 결제 요청 데이터:");
-		info_printf(ch, "  - 카드번호: %s", pScenario->m_CardInfo.Card_Num);
-		info_printf(ch, "  - 유효기간: %s", pScenario->m_CardInfo.ExpireDt);
-		info_printf(ch, "  - 할부개월: %s", pScenario->m_CardInfo.InstPeriod);
-		info_printf(ch, "  - 비밀번호: **");
-		info_printf(ch, "  - 주민번호: %s", pScenario->m_CardInfo.SecretNo);
+		// 결제 데이터 전송 직전 로그 (info_printf는 간단하게, eprintf는 상세하게)
+		info_printf(ch, "[KICC] 결제 요청 데이터 준비 완료");
+		eprintf("[KICC] 결제 요청 데이터: 카드번호=%s, 유효기간=%s, 할부개월=%s, 주민번호=%s",
+			pScenario->m_CardInfo.Card_Num,
+			pScenario->m_CardInfo.ExpireDt,
+			pScenario->m_CardInfo.InstPeriod,
+			pScenario->m_CardInfo.SecretNo);
 	}
 
 	//거래 유형
@@ -638,15 +635,15 @@ unsigned int __stdcall KiccArsPayProcess(void *data)
 	{// 사업자 번호이면 (10자리 이상)
 		memset(szUserType, 0x00, sizeof(szUserType));
 		strncpy(szUserType, "1", sizeof(szUserType) - 1);
-		xprintf("[CH:%03d] user_type=1 (사업자번호: %d자리)", ch, strlen(pScenario->m_CardInfo.SecretNo));
+		eprintf("user_type=1 (사업자번호: %d자리)", strlen(pScenario->m_CardInfo.SecretNo));
 	}
 	else if (strlen(pScenario->m_CardInfo.SecretNo) == 6)
 	{// 개인 (생년월일 6자리)
-		xprintf("[CH:%03d] user_type=0 (개인/생년월일: 6자리)", ch);
+		eprintf("user_type=0 (개인/생년월일: 6자리)");
 	}
 	else
 	{// 주민번호 없음 - 개인으로 기본 설정
-		xprintf("[CH:%03d] user_type=0 (주민번호 생략 - 개인 기본값)", ch);
+		eprintf("user_type=0 (주민번호 생략 - 개인 기본값)");
 	}
 
 	sprintf_s(szAmount, sizeof(szAmount), "%d", pScenario->m_namount);//결제할 금액 설정
@@ -698,7 +695,7 @@ unsigned int __stdcall KiccArsPayProcess(void *data)
 	// [MODIFIED] 첫 번째 조회 결과 재사용 (중복 호출 제거)
 	if (strlen(szClientIP) > 0) {
 		strncpy(szDefine2, szClientIP, sizeof(szDefine2) - 1);
-		xprintf("[CH:%03d] Reusing client IP for user_define2: %s", ch, szDefine2);
+		eprintf("Reusing client IP for user_define2: %s", szDefine2);
 	}
 	else {
 		FindWebAddresss(ch, szDefine2);
@@ -748,8 +745,8 @@ unsigned int __stdcall KiccArsPayProcess(void *data)
 	lplfEP_CLI_DLL__set_plan_data(szReqData, &obj_s_CFG_I);
 
 	// KICC와 통신
-	eprintf("[CH:%03d] [KICC] 결제 요청 전송: 게이트웨이=%s:%s, 가맹점ID=%s, 주문번호=%s", 
-		ch, szGwUrl, szGWport, szMallid, szOrder_no);
+	eprintf("[KICC] 결제 요청 전송: 게이트웨이=%s:%s, 가맹점ID=%s, 주문번호=%s",
+		szGwUrl, szGWport, szMallid, szOrder_no);
 	lplfEP_CLI_DLL__proc(szTrCd, szMallid, szClientIP, szOrder_no, &obj_s_CFG_I, szResData, sizeof(szResData) - 1);
 
 	memset(&pScenario->m_CardResInfo, 0x00, sizeof(pScenario->m_CardResInfo));
@@ -797,13 +794,13 @@ unsigned int __stdcall KiccArsPayProcess(void *data)
 	memcpy(pScenario->m_CardResInfo.TERMINAL_ID, pScenario->m_szterminal_id, sizeof(pScenario->m_CardResInfo.TERMINAL_ID) - 1);
 
 	KiccNone_Pay_Quithostio("KiccArsPayProcess the line service is 성공.", ch);
-	xprintf("[CH:%03d] KiccArsPayProcess END", ch);
+	eprintf("KiccArsPayProcess END");
 	_endthreadex((unsigned int)pScenario->m_hPayThread);
 
 	return 0;
 }
 
-// 결제 취소 요청 쓰레드용 함수 
+// 결제 취소 요청 쓰레드용 함수
 unsigned int __stdcall KiccArsPayCancleProcess(void *data)
 {
 	int			ch;
@@ -820,7 +817,7 @@ unsigned int __stdcall KiccArsPayCancleProcess(void *data)
 		pScenario->m_PaySysCd = -1;
 		(*port)[ch].ppftbl[POST_NET].postcode = HI_COMM;
 		KiccNone_Pay_Quithostio("ArsPayCancleProcess the line service is not valid any more.", ch);
-		xprintf("[CH:%03d] sp_getNiceOrderInfoByTel2 END", ch);
+		eprintf("KiccArsPayCancleProcess END");
 		_endthreadex((unsigned int)pScenario->m_hPayThread);
 		return 0;
 	}
@@ -840,17 +837,17 @@ unsigned int __stdcall KiccArsPayCancleProcess(void *data)
 	GetPrivateProfileString("KICCPAY", "KICC_GW_PORT", KICC_GW_PORT, szGWport, sizeof(szGWport), PARAINI);
 	
 	// 게이트웨이 URL 확인 로그
-	eprintf("[CH:%03d] [KICC] 게이트웨이 URL: %s, 포트: %s", ch, szGwUrl, szGWport);
-	
+	eprintf("[KICC] 게이트웨이 URL: %s, 포트: %s", szGwUrl, szGWport);
+
 	// [MODIFIED] 설정 파일에서 IP 읽기 (빠른 처리)
 	GetPrivateProfileString("KICCPAY", "KICC_CLIENT_IP", KICC_CLIENT_IP, szClientIP, sizeof(szClientIP), PARAINI);
 	// 설정 파일에 IP가 없거나 비어있을 경우에만 웹에서 조회
 	if (strlen(szClientIP) == 0) {
-		xprintf("[CH:%03d] KICC_CLIENT_IP not found in config, trying web lookup...", ch);
+		eprintf("KICC_CLIENT_IP not found in config, trying web lookup...");
 		FindWebAddresss(ch, szClientIP);
 	}
 	else {
-		xprintf("[CH:%03d] Using KICC_CLIENT_IP from config: %s", ch, szClientIP);
+		eprintf("Using KICC_CLIENT_IP from config: %s", szClientIP);
 	}
 
 	GetPrivateProfileString("KICCPAY", "KICC_MAII_ID", KICC_MAII_ID, szMallid, sizeof(szMallid), PARAINI);
@@ -886,7 +883,7 @@ unsigned int __stdcall KiccArsPayCancleProcess(void *data)
 		pScenario->m_PaySysCd = -1;
 		(*port)[ch].ppftbl[POST_NET].postcode = HI_COMM;
 		KiccNone_Pay_Quithostio("KiccArsPayCancleProcess the line service is not valid any more-lplfEP_CLI_DLL__init.", ch);
-		xprintf("[CH:%03d] KiccArsPayCancleProcess END", ch);
+		eprintf("KiccArsPayCancleProcess END");
 		_endthreadex((unsigned int)pScenario->m_hPayThread);
 		return 0;
 	}
@@ -923,8 +920,8 @@ unsigned int __stdcall KiccArsPayCancleProcess(void *data)
 	lplfEP_CLI_DLL__set_plan_data(szReqData, &obj_s_CFG_I);
 
 	// KICC와 통신
-	eprintf("[CH:%03d] [KICC] 취소 요청 전송: 게이트웨이=%s:%s, 가맹점ID=%s, 주문번호=%s", 
-		ch, szGwUrl, szGWport, szMallid, pScenario->m_Card_CancleInfo.ORDER_NO);
+	eprintf("[KICC] 취소 요청 전송: 게이트웨이=%s:%s, 가맹점ID=%s, 주문번호=%s",
+		szGwUrl, szGWport, szMallid, pScenario->m_Card_CancleInfo.ORDER_NO);
 	lplfEP_CLI_DLL__proc(szTrCd, szMallid, szClientIP, pScenario->m_Card_CancleInfo.ORDER_NO, &obj_s_CFG_I, szResData, sizeof(szResData) - 1);
 
 	// 응답전문 파싱
@@ -968,7 +965,7 @@ unsigned int __stdcall KiccArsPayCancleProcess(void *data)
 	memcpy(pScenario->m_Cancel_ResInfo.TERMINAL_ID, pScenario->m_szterminal_id, sizeof(pScenario->m_Cancel_ResInfo.TERMINAL_ID) - 1);
 
 	KiccNone_Pay_Quithostio("KiccArsPayCancleProcess the line service is 성공.", ch);
-	xprintf("[CH:%03d] KiccArsPayCancleProcess END", ch);
+	eprintf("KiccArsPayCancleProcess END");
 	_endthreadex((unsigned int)pScenario->m_hPayThread);
 	return 0;
 }

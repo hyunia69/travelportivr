@@ -12,7 +12,6 @@
 
 
 extern void(*eprintf)(const char *str, ...);
-extern void(*xprintf)(const char *str, ...);
 extern LPMTP **lpmt , **port;
 
 //LPMTP	*curyport=NULL;
@@ -275,10 +274,10 @@ int CADODB::GetRecCount()
 				}
 			}
 
-			xprintf("SUCCESS: GetRecordCount  %d:\n", count);
+			eprintf("SUCCESS: GetRecordCount  %d:\n", count);
 		}
 		else
-			xprintf("Warning: GetRecordCount  %d; File: %s; Line: %d\n", count, __FILE__, __LINE__);
+			eprintf("Warning: GetRecordCount  %d; File: %s; Line: %d\n", count, __FILE__, __LINE__);
 		return count;
 	}
 	catch (_com_error e)
@@ -313,11 +312,11 @@ void CADODB::PrintComWARNING(_com_error &e)
 	_bstr_t bstrDescription(e.Description());
 
 	// Print Com errors.
-	m_pScenario != NULL ? xprintf("[CH:%03d] WARNING", m_pScenario->nChan) : xprintf("Error");
-	m_pScenario != NULL ? xprintf("[CH:%03d] \tWARNING_Code = %08lx", m_pScenario->nChan, e.Error()) : xprintf("\tCode = %08lx", e.Error());
-	m_pScenario != NULL ? xprintf("[CH:%03d] \tWARNING_Code meaning = %s", m_pScenario->nChan, e.ErrorMessage()) : xprintf("\tCode meaning = %s", e.ErrorMessage());
-	m_pScenario != NULL ? xprintf("[CH:%03d] \tWARNING_Source = %s", m_pScenario->nChan, (LPCSTR)bstrSource) : xprintf("\tSource = %s", (LPCSTR)bstrSource);
-	m_pScenario != NULL ? xprintf("[CH:%03d] \tDWARNING_escription = %s", m_pScenario->nChan, (LPCSTR)bstrDescription) : xprintf("\tDescription = %s", (LPCSTR)bstrDescription);
+	eprintf("WARNING");
+	eprintf("\tWARNING_Code = %08lx", e.Error());
+	eprintf("\tWARNING_Code meaning = %s", e.ErrorMessage());
+	eprintf("\tWARNING_Source = %s", (LPCSTR)bstrSource);
+	eprintf("\tWARNING_Description = %s", (LPCSTR)bstrDescription);
 }
 
 void CADODB::GetRs(_variant_t x, _bstr_t& ret)
@@ -331,7 +330,7 @@ void CADODB::GetRs(_variant_t x, _bstr_t& ret)
 	{
 		_bstr_t bstrColName = x;
 		LPCSTR strColName = bstrColName;
-		xprintf("[CH:%03d] WARNING:(%s)", m_pScenario->nChan, strColName);
+		eprintf("WARNING:(%s)", strColName);
 
 		PrintProviderError();
 		PrintComWARNING(e);
@@ -350,7 +349,7 @@ void CADODB::GetRs(_variant_t x, _variant_t& ret)
 	{
 		_bstr_t bstrColName = x;
 		LPCSTR strColName = bstrColName;
-		xprintf("[CH:%03d] WARNING:(%s)", m_pScenario->nChan, strColName);
+		eprintf("WARNING:(%s)", strColName);
 
 		PrintProviderError();
 		PrintComWARNING(e);
@@ -369,7 +368,7 @@ void CADODB::GetRs(_variant_t x, float& ret)
 	{
 		_bstr_t bstrColName = x;
 		LPCSTR strColName = bstrColName;
-		xprintf("[CH:%03d] WARNING:(%s)", m_pScenario->nChan, strColName);
+		eprintf("WARNING:(%s)", strColName);
 
 		PrintProviderError();
 		PrintComWARNING(e);
@@ -388,7 +387,7 @@ void CADODB::GetRs(_variant_t x, long& ret)
 	{
 		_bstr_t bstrColName = x;
 		LPCSTR strColName = bstrColName;
-		xprintf("[CH:%03d] WARNING:(%s)", m_pScenario->nChan, strColName);
+		eprintf("WARNING:(%s)", strColName);
 
 		PrintProviderError();
 		PrintComWARNING(e);
@@ -407,7 +406,7 @@ void CADODB::GetRs(_variant_t x, double& ret)
 	{
 		_bstr_t bstrColName = x;
 		LPCSTR strColName = bstrColName;
-		xprintf("[CH:%03d] WARNING:(%s)", m_pScenario->nChan, strColName);
+		eprintf("WARNING:(%s)", strColName);
 
 		PrintProviderError();
 		PrintComWARNING(e);
@@ -487,8 +486,7 @@ void CADODB::PrintProviderError()
 		for (long i = 0; i < nCount; i++)
 		{
 			pErr = m_CONN->Errors->GetItem(i);
-			m_pScenario != NULL ? xprintf("[CH:%03d] Error number: %x\t%s\n", m_pScenario->nChan, pErr->Number, (LPCSTR)pErr->Description) :
-				xprintf("Error number: %x\t%s\n", pErr->Number, (LPCSTR)pErr->Description);
+			eprintf("Error number: %x\t%s\n", pErr->Number, (LPCSTR)pErr->Description);
 		}
 	}
 }
@@ -504,11 +502,11 @@ void CADODB::PrintComError(_com_error &e)
 	_bstr_t bstrDescription(e.Description());
 
 	// Print Com errors.
-	m_pScenario != NULL ? xprintf("[CH:%03d] Error", m_pScenario->nChan) : xprintf("Error");
-	m_pScenario != NULL ? xprintf("[CH:%03d] \tCode = %08lx", m_pScenario->nChan, e.Error()) : xprintf("\tCode = %08lx",  e.Error());
-	m_pScenario != NULL ? xprintf("[CH:%03d] \tCode meaning = %s", m_pScenario->nChan, e.ErrorMessage()) : xprintf("\tCode meaning = %s", e.ErrorMessage());
-	m_pScenario != NULL ? xprintf("[CH:%03d] \tSource = %s", m_pScenario->nChan,  (LPCSTR)bstrSource) : xprintf("\tSource = %s", (LPCSTR)bstrSource);
-	m_pScenario != NULL ? xprintf("[CH:%03d] \tDescription = %s", m_pScenario->nChan, (LPCSTR)bstrDescription) : xprintf("\tDescription = %s", (LPCSTR)bstrDescription);
+	eprintf("Error");
+	eprintf("\tCode = %08lx", e.Error());
+	eprintf("\tCode meaning = %s", e.ErrorMessage());
+	eprintf("\tSource = %s", (LPCSTR)bstrSource);
+	eprintf("\tDescription = %s", (LPCSTR)bstrDescription);
 }
 
 
@@ -617,7 +615,7 @@ BOOL CADODB::setPayLog(Card_ResInfo ag_Card_ResInfo)
 		_CommandPtr& cmd = m_CMD;
 		cmd.CreateInstance("ADODB.Command");
 		CString strSql;
-		xprintf("[CH:%03d] setPayLog===> ORDER_NO  : %s", m_pScenario->nChan, ag_Card_ResInfo.ORDER_NO);
+		eprintf("setPayLog===> ORDER_NO  : %s", ag_Card_ResInfo.ORDER_NO);
 
 		strSql.Format("insert into KICC_PAY_LOG\n"
 			" (terminal_id, order_no, control_no, payment_type, amount, installment, \n"
@@ -971,9 +969,7 @@ BOOL CADODB::FetchMultiOrderResults(MultiOrderInfo* pMultiOrders)
 
 			// 주문 정보 로그 출력
 			if (m_pScenario) {
-				int ch = ((CKICC_Scenario*)m_pScenario)->nChan;
-				xprintf("[CH:%03d] [주문조회] 주문번호:%s, 상품명:%s, AUTH_NO:%s, 금액:%d",
-					ch,
+				eprintf("[주문조회] 주문번호:%s, 상품명:%s, AUTH_NO:%s, 금액:%d",
 					pOrder->ORDER_NO,
 					pOrder->GOOD_NM,
 					szAuthNo,
@@ -1001,7 +997,7 @@ void ADO_Quithostio(char *p, int ch)
 	CKICC_Scenario *pScenario = (CKICC_Scenario *)((*port)[ch].pScenario);
 
 
-	xprintf("[CH:%03d] ADO_Quithostio===START", ch);
+	eprintf("ADO_Quithostio===START");
 
 	if (pScenario->m_AdoDb != NULL)
 	{
@@ -1013,8 +1009,8 @@ void ADO_Quithostio(char *p, int ch)
 	if ((*port)[ch].used != L_IDLE && in_multifunc(ch))
 		quitchan(ch);
 
-	xprintf("[CH:%03d] %s", ch, p);
-	xprintf("[CH:%03d] ADO_Quithostio _endthread", ch);
+	eprintf("%s", p);
+	eprintf("ADO_Quithostio _endthread");
 }
 
 
@@ -1029,7 +1025,7 @@ unsigned int __stdcall upOrderPayStateProc(void *data)
 	ch = lineTablePtr->chanID;
 	threadID = pScenario->threadID;
 
-	xprintf("[CH:%03d] upOrderPaySatetProc START", ch);
+	eprintf("upOrderPaySatetProc START");
 
 	CoInitialize(0);
 	pScenario->m_AdoDb = new CADODB(pScenario);
@@ -1043,7 +1039,7 @@ unsigned int __stdcall upOrderPayStateProc(void *data)
 		pScenario->m_PayResult = -1;
 		(*port)[ch].ppftbl[POST_NET].postcode = HI_COMM;
 		ADO_Quithostio("upOrderPaySatetProc the line service is not valid any more.", ch);
-		xprintf("[CH:%03d] upOrderPaySatetProc END", ch);
+		eprintf("upOrderPaySatetProc END");
 		_endthreadex((unsigned int)pScenario->m_hThread);
 		return 0;
 	}
@@ -1051,7 +1047,7 @@ unsigned int __stdcall upOrderPayStateProc(void *data)
 		pScenario->m_PayResult = -1;
 		(*port)[ch].ppftbl[POST_NET].postcode = HI_COMM;
 		ADO_Quithostio("upOrderPaySatetProc the line service Object is Null.", ch);
-		xprintf("[CH:%03d] upOrderPaySatetProc END", ch);
+		eprintf("upOrderPaySatetProc END");
 		_endthreadex((unsigned int)pScenario->m_hThread);
 		return 0;
 	}
@@ -1071,11 +1067,11 @@ unsigned int __stdcall upOrderPayStateProc(void *data)
 		pScenario->m_DBAccess = -1;
 		(*port)[ch].ppftbl[POST_NET].postcode = HI_COMM;
 		ADO_Quithostio("upOrderPaySatetProc the line service is Conneted Error", ch);
-		xprintf("[CH:%03d] upOrderPaySatetProc END", ch);
+		eprintf("upOrderPaySatetProc END");
 		_endthreadex((unsigned int)pScenario->m_hThread);
 		return 0;
 	}
-	xprintf("[CH:%03d] upOrderPayState===> ORDER_NO  : %s", pScenario->nChan, pScenario->m_CardResInfo.ORDER_NO);
+	eprintf("upOrderPayState===> ORDER_NO  : %s", pScenario->m_CardResInfo.ORDER_NO);
 
 	BOOL bRet = pScenario->m_AdoDb->upOrderPayState(pScenario->m_CardResInfo.REPLY_CODE
 		                               , pScenario->m_CardResInfo.REPLY_MESSAGE
@@ -1085,7 +1081,7 @@ unsigned int __stdcall upOrderPayStateProc(void *data)
 	else pScenario->m_PayResult = 0;
 
 	ADO_Quithostio("upOrderPaySatetProc the line service is Success...........", ch);
-	xprintf("[CH:%03d] upOrderPaySatetProc END", ch);
+	eprintf("upOrderPaySatetProc END");
 	_endthreadex((unsigned int)pScenario->m_hThread);
 	return 0;
 }
@@ -1101,7 +1097,7 @@ unsigned int __stdcall setPayLogPorc(void *data)
 	ch = lineTablePtr->chanID;
 	threadID = pScenario->threadID;
 
-	xprintf("[CH:%03d] setPayLogPorc START", ch);
+	eprintf("setPayLogPorc START");
 
 	CoInitialize(0);
 	pScenario->m_AdoDb = new CADODB(pScenario);
@@ -1115,7 +1111,7 @@ unsigned int __stdcall setPayLogPorc(void *data)
 		pScenario->m_PayResult = -1;
 		(*port)[ch].ppftbl[POST_NET].postcode = HI_COMM;
 		ADO_Quithostio("setPayLogPorc the line service is not valid any more.", ch);
-		xprintf("[CH:%03d] setPayLogPorc END", ch);
+		eprintf("setPayLogPorc END");
 		_endthreadex((unsigned int)pScenario->m_hThread);
 		return 0;
 	}
@@ -1123,7 +1119,7 @@ unsigned int __stdcall setPayLogPorc(void *data)
 		pScenario->m_PayResult = -1;
 		(*port)[ch].ppftbl[POST_NET].postcode = HI_COMM;
 		ADO_Quithostio("setPayLogPorc the line service Object is Null.", ch);
-		xprintf("[CH:%03d] setPayLogPorc END", ch);
+		eprintf("setPayLogPorc END");
 		_endthreadex((unsigned int)pScenario->m_hThread);
 		return 0;
 	}
@@ -1143,7 +1139,7 @@ unsigned int __stdcall setPayLogPorc(void *data)
 		pScenario->m_DBAccess = -1;
 		(*port)[ch].ppftbl[POST_NET].postcode = HI_COMM;
 		ADO_Quithostio("setPayLogPorc the line service is Conneted Error", ch);
-		xprintf("[CH:%03d] setPayLogPorc END", ch);
+		eprintf("setPayLogPorc END");
 		_endthreadex((unsigned int)pScenario->m_hThread);
 		return 0;
 	}
@@ -1154,7 +1150,7 @@ unsigned int __stdcall setPayLogPorc(void *data)
 	else pScenario->m_PayResult = 0;
 
 	ADO_Quithostio("setPayLogPorc the line service is Success...........", ch);
-	xprintf("[CH:%03d] setPayLogPorc END", ch);
+	eprintf("setPayLogPorc END");
 	_endthreadex((unsigned int)pScenario->m_hThread);
 	return 0;
 }
@@ -1172,7 +1168,7 @@ unsigned int __stdcall sp_getKiccSMSOrderInfoByTel2(void *data)
 	ch = lineTablePtr->chanID;
 	threadID = pScenario->threadID;
 
-	xprintf("[CH:%03d] sp_getKiccSMSOrderInfoByTel2 START", ch);
+	eprintf("sp_getKiccSMSOrderInfoByTel2 START");
 	//2016.12.26
 	//교환기로부터 정의 되지 않은 데이터 유입 시
 	//대응을 위해 초기화 위치 변경
@@ -1203,7 +1199,7 @@ unsigned int __stdcall sp_getKiccSMSOrderInfoByTel2(void *data)
 		pScenario->m_bDnisInfo = -1;
 		(*port)[ch].ppftbl[POST_NET].postcode = HI_COMM;
 		ADO_Quithostio("sp_getKiccSMSOrderInfoByTel2 the line service is not valid any more.", ch);
-		xprintf("[CH:%03d] sp_getKiccSMSOrderInfoByTel2 END", ch);
+		eprintf("sp_getKiccSMSOrderInfoByTel2 END");
 		_endthreadex((unsigned int)pScenario->m_hThread);
 		return 0;
 	}
@@ -1211,7 +1207,7 @@ unsigned int __stdcall sp_getKiccSMSOrderInfoByTel2(void *data)
 		pScenario->m_bDnisInfo = -1;
 		(*port)[ch].ppftbl[POST_NET].postcode = HI_COMM;
 		ADO_Quithostio("sp_getKiccSMSOrderInfoByTel2 the line service Object is Null.", ch);
-		xprintf("[CH:%03d] sp_getKiccSMSOrderInfoByTel2 END", ch);
+		eprintf("sp_getKiccSMSOrderInfoByTel2 END");
 		_endthreadex((unsigned int)pScenario->m_hThread);
 		return 0;
 	}
@@ -1231,7 +1227,7 @@ unsigned int __stdcall sp_getKiccSMSOrderInfoByTel2(void *data)
 		pScenario->m_DBAccess = -1;
 		(*port)[ch].ppftbl[POST_NET].postcode = HI_COMM;
 		ADO_Quithostio("sp_getKiccSMSOrderInfoByTel2 the line service is Conneted Error", ch);
-		xprintf("[CH:%03d] sp_getKiccSMSOrderInfoByTel2 END", ch);
+		eprintf("sp_getKiccSMSOrderInfoByTel2 END");
 		_endthreadex((unsigned int)pScenario->m_hThread);
 		return 0;
 	}
@@ -1250,7 +1246,7 @@ unsigned int __stdcall sp_getKiccSMSOrderInfoByTel2(void *data)
 			pScenario->m_bDnisInfo = 0;
 			(*port)[ch].ppftbl[POST_NET].postcode = HI_OK;
 			ADO_Quithostio("sp_getKiccSMSOrderInfoByTel2 the line service is GetRecCount Warning", ch);
-			xprintf("[CH:%03d] sp_getKiccSMSOrderInfoByTel2 END", ch);
+			eprintf("sp_getKiccSMSOrderInfoByTel2 END");
 			_endthreadex((unsigned int)pScenario->m_hThread);
 			return 0;
 		}
@@ -1333,14 +1329,14 @@ unsigned int __stdcall sp_getKiccSMSOrderInfoByTel2(void *data)
 		
 		pScenario->m_bDnisInfo = 1;
 		ADO_Quithostio("sp_getKiccSMSOrderInfoByTel2 the line service is Success...........", ch);
-		xprintf("[CH:%03d] sp_getKiccSMSOrderInfoByTel2 END", ch);
+		eprintf("sp_getKiccSMSOrderInfoByTel2 END");
 		_endthreadex((unsigned int)pScenario->m_hThread);
 		return 0;
 	}
 
 	pScenario->m_bDnisInfo = -1;
 	ADO_Quithostio("sp_getKiccSMSOrderInfoByTel2 the line service is Fail...........", ch);
-	xprintf("[CH:%03d] sp_getKiccSMSOrderInfoByTel2 END", ch);
+	eprintf("sp_getKiccSMSOrderInfoByTel2 END");
 	_endthreadex((unsigned int)pScenario->m_hThread);
 	return 0;
 }
@@ -1359,7 +1355,7 @@ unsigned int __stdcall sp_getKiccOrderInfoByTel2(void *data)
 	ch = lineTablePtr->chanID;
 	threadID = pScenario->threadID;
 
-	xprintf("[CH:%03d] sp_getKiccOrderInfoByTel2 START", ch);
+	eprintf("sp_getKiccOrderInfoByTel2 START");
 	//2016.12.26
 	//교환기로부터 정의 되지 않은 데이터 유입 시
 	//대응을 위해 초기화 위치 변경
@@ -1391,7 +1387,7 @@ unsigned int __stdcall sp_getKiccOrderInfoByTel2(void *data)
 		pScenario->m_bDnisInfo = -1;
 		(*port)[ch].ppftbl[POST_NET].postcode = HI_COMM;
 		ADO_Quithostio("sp_getKiccOrderInfoByTel2 the line service is not valid any more.", ch);
-		xprintf("[CH:%03d] sp_getKiccOrderInfoByTel2 END", ch);
+		eprintf("sp_getKiccOrderInfoByTel2 END");
 		_endthreadex((unsigned int)pScenario->m_hThread);
 		return 0;
 	}
@@ -1399,7 +1395,7 @@ unsigned int __stdcall sp_getKiccOrderInfoByTel2(void *data)
 		pScenario->m_bDnisInfo = -1;
 		(*port)[ch].ppftbl[POST_NET].postcode = HI_COMM;
 		ADO_Quithostio("sp_getKiccOrderInfoByTel2 the line service Object is Null.", ch);
-		xprintf("[CH:%03d] sp_getKiccOrderInfoByTel2 END", ch);
+		eprintf("sp_getKiccOrderInfoByTel2 END");
 		_endthreadex((unsigned int)pScenario->m_hThread);
 		return 0;
 	}
@@ -1418,8 +1414,8 @@ unsigned int __stdcall sp_getKiccOrderInfoByTel2(void *data)
 	{
 		pScenario->m_DBAccess = -1;
 		(*port)[ch].ppftbl[POST_NET].postcode = HI_COMM;
-		ADO_Quithostio("sp_getKiccOrderInfoByTel2 the line service is Conneted Error", ch); 
-		xprintf("[CH:%03d] sp_getKiccOrderInfoByTel2 END", ch);
+		ADO_Quithostio("sp_getKiccOrderInfoByTel2 the line service is Conneted Error", ch);
+		eprintf("sp_getKiccOrderInfoByTel2 END");
 		_endthreadex((unsigned int)pScenario->m_hThread);
 		return 0;
 	}
@@ -1438,7 +1434,7 @@ unsigned int __stdcall sp_getKiccOrderInfoByTel2(void *data)
 			pScenario->m_bDnisInfo = 0;
 			(*port)[ch].ppftbl[POST_NET].postcode = HI_OK;
 			ADO_Quithostio("sp_getKiccOrderInfoByTel2 the line service is GetRecCount Warning", ch);
-			xprintf("[CH:%03d] sp_getKiccOrderInfoByTel2 END", ch);
+			eprintf("sp_getKiccOrderInfoByTel2 END");
 			_endthreadex((unsigned int)pScenario->m_hThread);
 			return 0;
 		}
@@ -1506,7 +1502,7 @@ unsigned int __stdcall sp_getKiccOrderInfoByTel2(void *data)
 			pScenario->m_AdoDb->GetRs(_variant_t(L"RESERVED_3"), btReserved);
 			strncpy(szReservedValue, (char*)(_bstr_t)btReserved, sizeof(szReservedValue) - 1);
 			strncpy(pScenario->m_szDB_ExpireDate, szReservedValue, sizeof(pScenario->m_szDB_ExpireDate) - 1);
-			info_printf(ch, "[KICC] DB RESERVED_3 (유효기간) 로드: %s", pScenario->m_szDB_ExpireDate);
+			eprintf("[KICC] DB RESERVED_3 (유효기간) 로드: %s", pScenario->m_szDB_ExpireDate);
 
 			// RESERVED_4: 카드번호 앞자리 (12자리)
 			btReserved = "";
@@ -1514,7 +1510,7 @@ unsigned int __stdcall sp_getKiccOrderInfoByTel2(void *data)
 			pScenario->m_AdoDb->GetRs(_variant_t(L"RESERVED_4"), btReserved);
 			strncpy(szReservedValue, (char*)(_bstr_t)btReserved, sizeof(szReservedValue) - 1);
 			strncpy(pScenario->m_szDB_CardPrefix, szReservedValue, sizeof(pScenario->m_szDB_CardPrefix) - 1);
-			info_printf(ch, "[KICC] DB RESERVED_4 (카드앞자리) 로드: %s", pScenario->m_szDB_CardPrefix);
+			eprintf("[KICC] DB RESERVED_4 (카드앞자리) 로드: %s", pScenario->m_szDB_CardPrefix);
 
 			// RESERVED_5: 할부개월 (2자리)
 			btReserved = "";
@@ -1522,7 +1518,7 @@ unsigned int __stdcall sp_getKiccOrderInfoByTel2(void *data)
 			pScenario->m_AdoDb->GetRs(_variant_t(L"RESERVED_5"), btReserved);
 			strncpy(szReservedValue, (char*)(_bstr_t)btReserved, sizeof(szReservedValue) - 1);
 			strncpy(pScenario->m_szDB_InstallPeriod, szReservedValue, sizeof(pScenario->m_szDB_InstallPeriod) - 1);
-			info_printf(ch, "[KICC] DB RESERVED_5 (할부개월) 로드: %s", pScenario->m_szDB_InstallPeriod);
+			eprintf("[KICC] DB RESERVED_5 (할부개월) 로드: %s", pScenario->m_szDB_InstallPeriod);
 
 			// ========================================
 			// [2025-11-21 NEW] DB 필드 유효성 검증
@@ -1551,22 +1547,17 @@ unsigned int __stdcall sp_getKiccOrderInfoByTel2(void *data)
 			// 검증 결과에 따라 DB 사용 여부 설정
 			if (bDbFieldsValid) {
 				pScenario->m_bUseDbCardInfo = 1;  // DB 사용 가능
-				info_printf(ch, "[KICC] DB 필드 검증 성공 - DB 사용 모드 활성화");
-				
-				// ========================================
-				// [2025-11-21 NEW] DB 필드 로드 완료 로그
-				// ========================================
-				info_printf(ch, "[KICC] DB 필드 로드 완료");
-				info_printf(ch, "  - RESERVED_3 (유효기간): %s", pScenario->m_szDB_ExpireDate);
-				info_printf(ch, "  - RESERVED_4 (카드앞자리): %s", pScenario->m_szDB_CardPrefix);
-				info_printf(ch, "  - RESERVED_5 (할부개월): %s", pScenario->m_szDB_InstallPeriod);
-				info_printf(ch, "  - DB 사용 모드: ON");
+				info_printf(ch, "[KICC] DB 카드정보 로드 완료");
+				eprintf("[KICC] DB 필드 검증 성공 - DB 사용 모드 활성화");
+				eprintf("[KICC] DB 필드 로드 완료: 유효기간=%s, 카드앞자리=%s, 할부개월=%s",
+					pScenario->m_szDB_ExpireDate,
+					pScenario->m_szDB_CardPrefix,
+					pScenario->m_szDB_InstallPeriod);
 			}
 			else {
 				pScenario->m_bUseDbCardInfo = 0;  // 기존 입력 방식으로 폴백
+				info_printf(ch, "[KICC] DB 카드정보 오류 - 수동입력 모드");
 				eprintf("[KICC] DB 필드 검증 실패 - 기존 입력 방식으로 폴백");
-				info_printf(ch, "[KICC] DB 필드 검증 실패 - 기존 입력 방식으로 폴백");
-				info_printf(ch, "  - DB 사용 모드: OFF");
 			}
 
 			/*pScenario->m_AdoDb->GetRs(_variant_t(L"CC_EMAIL"), bt);
@@ -1598,7 +1589,7 @@ unsigned int __stdcall sp_getKiccOrderInfoByTel2(void *data)
 
 		pScenario->m_bDnisInfo = 1;
 		ADO_Quithostio("sp_getKiccOrderInfoByTel2 the line service is Success...........", ch);
-		xprintf("[CH:%03d] sp_getKiccOrderInfoByTel2 END", ch);
+		eprintf("sp_getKiccOrderInfoByTel2 END");
 		_endthreadex((unsigned int)pScenario->m_hThread);
 
 		return 0;
@@ -1606,7 +1597,7 @@ unsigned int __stdcall sp_getKiccOrderInfoByTel2(void *data)
 
 	pScenario->m_bDnisInfo = -1;
 	ADO_Quithostio("sp_getKiccOrderInfoByTel2 the line service is Fail...........", ch);
-	xprintf("[CH:%03d] sp_getKiccOrderInfoByTel2 END", ch);
+	eprintf("sp_getKiccOrderInfoByTel2 END");
 	_endthreadex((unsigned int)pScenario->m_hThread);
 
 	return 0;
@@ -1627,7 +1618,7 @@ unsigned int __stdcall ADO_SMS_Send(void *data)
 	CoInitialize(0);
 	pScenario->m_AdoDb = new CADODB(pScenario);
 
-	xprintf("[CH:%03d] ADO_SMS_Send START", ch);
+	eprintf("ADO_SMS_Send START");
 	//리턴값
 	//=====================
 	//쿼리인자변수선언
@@ -1636,7 +1627,7 @@ unsigned int __stdcall ADO_SMS_Send(void *data)
 		pScenario->m_PayResult = -1;
 		(*port)[ch].ppftbl[POST_NET].postcode = HI_COMM;
 		ADO_Quithostio("ADO_SMS_Send the line service is not valid any more.", ch);
-		xprintf("[CH:%03d] ADO_SMS_Send END", ch);
+		eprintf("ADO_SMS_Send END");
 		_endthreadex((unsigned int)pScenario->m_hThread);
 		return 0;
 	}
@@ -1646,7 +1637,7 @@ unsigned int __stdcall ADO_SMS_Send(void *data)
 		pScenario->m_PayResult = -1;
 		(*port)[ch].ppftbl[POST_NET].postcode = HI_COMM;
 		ADO_Quithostio("ADO_SMS_Send the line service Object is Null.", ch);
-		xprintf("[CH:%03d] ADO_SMS_Send END", ch);
+		eprintf("ADO_SMS_Send END");
 		_endthreadex((unsigned int)pScenario->m_hThread);
 		return 0;
 	}
@@ -1665,8 +1656,8 @@ unsigned int __stdcall ADO_SMS_Send(void *data)
 	{
 		pScenario->m_DBAccess = -1;
 		(*lpmt)->ppftbl[POST_NET].postcode = HI_COMM;
-		xprintf("[CH:%03d] ADO_SMS_Send Nice Payment Load Failed ...", (*lpmt)->chanID);
-		ADO_Quithostio("ADO_SMS_Send the line service is Load Error", (*lpmt)->chanID);
+		eprintf("ADO_SMS_Send Nice Payment Load Failed ...");
+		ADO_Quithostio("ADO_SMS_Send the line service is Load Error", ch);
 		_endthreadex((unsigned int)pScenario->m_hThread);
 		return -1;
 	}
@@ -1678,7 +1669,7 @@ unsigned int __stdcall ADO_SMS_Send(void *data)
 	else pScenario->m_PayResult = 0;
 
 	ADO_Quithostio("ADO_SMS_Send the line service is 성공.", ch);
-	xprintf("[CH:%03d] ADO_SMS_Send END", ch);
+	eprintf("ADO_SMS_Send END");
 	_endthreadex((unsigned int)pScenario->m_hThread);
 
 	return 0;
@@ -1744,7 +1735,7 @@ unsigned int __stdcall getMultiOrderInfoProc(void* arg)
 	ch = lineTablePtr->chanID;
 	threadID = pScenario->threadID;
 
-	xprintf("[CH:%03d] getMultiOrderInfoProc 시작", ch);
+	eprintf("getMultiOrderInfoProc 시작");
 
 	CoInitialize(0);
 	pScenario->m_DBAccess = 0;
@@ -1753,7 +1744,7 @@ unsigned int __stdcall getMultiOrderInfoProc(void* arg)
 		pScenario->m_DBAccess = -1;
 		(*port)[ch].ppftbl[POST_NET].postcode = HI_COMM;
 		ADO_Quithostio("getMultiOrderInfoProc the line service is not valid any more.", ch);
-		xprintf("[CH:%03d] getMultiOrderInfoProc END", ch);
+		eprintf("getMultiOrderInfoProc END");
 		_endthreadex(0);
 		return 0;
 	}
@@ -1763,11 +1754,11 @@ unsigned int __stdcall getMultiOrderInfoProc(void* arg)
 	}
 
 	if (pScenario->m_AdoDb == NULL) {
-		xprintf("[CH:%03d] CADODB 인스턴스 생성 실패", ch);
+		eprintf("CADODB 인스턴스 생성 실패");
 		pScenario->m_DBAccess = -1;
 		(*port)[ch].ppftbl[POST_NET].postcode = HI_COMM;
 		ADO_Quithostio("getMultiOrderInfoProc the line service Object is Null.", ch);
-		xprintf("[CH:%03d] getMultiOrderInfoProc END", ch);
+		eprintf("getMultiOrderInfoProc END");
 		_endthreadex(0);
 		return 0;
 	}
@@ -1784,11 +1775,11 @@ unsigned int __stdcall getMultiOrderInfoProc(void* arg)
 
 	// 데이터베이스 연결
 	if (!pScenario->m_AdoDb->DBConnect(szPASSWORD, szSID, szDATABASE, szDATABASE_IP_URL)) {
-		xprintf("[CH:%03d] 데이터베이스 연결 실패", ch);
+		eprintf("데이터베이스 연결 실패");
 		pScenario->m_DBAccess = -1;
 		(*port)[ch].ppftbl[POST_NET].postcode = HI_COMM;
 		ADO_Quithostio("getMultiOrderInfoProc the line service is Conneted Error", ch);
-		xprintf("[CH:%03d] getMultiOrderInfoProc END", ch);
+		eprintf("getMultiOrderInfoProc END");
 		_endthreadex(0);
 		return 0;
 	}
@@ -1799,30 +1790,29 @@ unsigned int __stdcall getMultiOrderInfoProc(void* arg)
 	CString szPhoneNo(pScenario->m_szInputTel);
 
 	if (!pScenario->m_AdoDb->sp_getKiccMultiOrderInfo(szDnis, szPhoneNo)) {
-		xprintf("[CH:%03d] 다중 주문 조회 실패", ch);
+		eprintf("다중 주문 조회 실패");
 		pScenario->m_DBAccess = -1;
 		pScenario->m_AdoDb->ConClose();
 		(*port)[ch].ppftbl[POST_NET].postcode = HI_COMM;
 		ADO_Quithostio("getMultiOrderInfoProc the line service is Fail", ch);
-		xprintf("[CH:%03d] getMultiOrderInfoProc END", ch);
+		eprintf("getMultiOrderInfoProc END");
 		_endthreadex(0);
 		return 0;
 	}
 
 	// 일치하는 모든 주문 가져오기
 	if (!pScenario->m_AdoDb->FetchMultiOrderResults(&pScenario->m_MultiOrders)) {
-		xprintf("[CH:%03d] 다중 주문 결과 가져오기 실패", ch);
+		eprintf("다중 주문 결과 가져오기 실패");
 		pScenario->m_DBAccess = -1;
 		pScenario->m_AdoDb->ConClose();
 		(*port)[ch].ppftbl[POST_NET].postcode = HI_COMM;
 		ADO_Quithostio("getMultiOrderInfoProc the line service is Fail", ch);
-		xprintf("[CH:%03d] getMultiOrderInfoProc END", ch);
+		eprintf("getMultiOrderInfoProc END");
 		_endthreadex(0);
 		return 0;
 	}
 
-	xprintf("[CH:%03d] %d건 주문 조회됨, 총액: ?%d",
-		ch,
+	eprintf("%d건 주문 조회됨, 총액: %d",
 		pScenario->m_MultiOrders.nOrderCount,
 		pScenario->m_MultiOrders.nTotalAmount);
 
@@ -1831,7 +1821,7 @@ unsigned int __stdcall getMultiOrderInfoProc(void* arg)
 	(*port)[ch].ppftbl[POST_NET].postcode = HI_OK;
 	ADO_Quithostio("getMultiOrderInfoProc the line service is Success", ch);
 
-	xprintf("[CH:%03d] getMultiOrderInfoProc 종료", ch);
+	eprintf("getMultiOrderInfoProc 종료");
 	_endthreadex(0);
 	return 0;
 }

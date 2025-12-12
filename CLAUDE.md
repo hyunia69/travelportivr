@@ -160,8 +160,7 @@ return 비동기작업_host(대기음악);
 ## 디버깅
 
 **로그 출력**:
-- `info_printf(ch, ...)` - 채널별 정보 로그
-- `xprintf(...)` - 일반 디버그 로그
-- `eprintf(...)` - 에러 로그
+- `info_printf(ch, ...)` - IVR 어플리케이션의 제한된 UI에 출력. 간단한 진행 상태만 표시
+- `eprintf(...)` - 로그 파일 출력. info_printf 내용 포함 + 디테일한 정보/데이터 로그. 채널 정보는 내부 처리됨
 
 **KICC DLL 로그**: `KICC_LOG` 디렉터리에 자동 저장
