@@ -1,41 +1,77 @@
-# Prerequisites
-*.d
+# =========================
+# Visual Studio / MSBuild
+# =========================
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
 
-# Compiled Object files
-*.slo
-*.lo
-*.o
+# Visual Studio cache / DB
+*.VC.db
+*.VC.VC.opendb
+*.opendb
+*.db
+
+# Build output folders
+Debug/
+Release/
+x64/
+x86/
+ARM/
+ARM64/
+Win32/
+bin/
+obj/
+out/
+
+# C++ intermediate / compiler outputs
 *.obj
-
-# Precompiled Headers
-*.gch
-*.pch
-
-# Linker files
-*.ilk
-
-# Debugger Files
+*.o
+*.iobj
+*.ipdb
 *.pdb
-
-# Compiled Dynamic libraries
-*.so
-*.dylib
-*.dll
-
-# Fortran module files
-*.mod
-*.smod
-
-# Compiled Static libraries
-*.lai
-*.la
-*.a
+*.ilk
+*.idb
+*.pch
+*.gch
+*.tlog
+*.log
+*.lastbuildstate
+*.unsuccessfulbuild
+*.res
+*.tlh
+*.tli
+*.sbr
+*.bsc
+*.exp
 *.lib
-
-# Executables
+*.dll
 *.exe
-*.out
-*.app
 
-# debug information files
-*.dwo
+# Precompiled header / IntelliSense
+ipch/
+*.ipch
+
+# MSBuild / project artifacts
+*.aps
+*.ncb
+*.sdf
+*.opensdf
+
+# =========================
+# General / temp / backups
+# =========================
+*.tmp
+*.temp
+*.bak
+*.old
+*.orig
+*.swp
+*.swo
+
+# Optional: Windows thumbnails / system files
+Thumbs.db
+Desktop.ini
+
+

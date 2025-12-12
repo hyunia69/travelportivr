@@ -1,0 +1,35 @@
+USE [arspg_web]
+GO
+/****** Object:  StoredProcedure [dbo].[sp_getKiccOrderInfoByTel2]    Script Date: 2025-11-21 오전 11:58:27 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[sp_getKiccOrderInfoByTel2]
+   @PHONE_NO varchar(32),
+	@DNIS     varchar(12)
+AS
+BEGIN
+	SELECT TOP 1 
+	      A.order_no,
+	      A.terminal_id,
+	      A.terminal_pw,
+	      A.terminal_nm,
+	      A.cust_nm,
+	      A.good_nm,
+	      A.amount,
+	      A.phone_no,
+	      B.SHOP_PW, 
+	      A.ADMIN_ID,
+		  A.RESERVED_3,
+		  A.RESERVED_4,
+		  A.RESERVED_5
+	FROM  KICC_SHOP_ORDER A
+	INNER JOIN  dbo.COMMON_DNIS_MID  B
+   	ON  A.terminal_id = B.SHOP_ID
+	WHERE DATEDIFF(dd, A.reg_date, GETDATE()) <=  7 AND
+	     B.ARS_DNIS= @DNIS AND
+	  	  A.payment_code = '0' AND
+	  	  A.phone_no = @PHONE_NO 
+	ORDER BY reg_date DESC
+END
