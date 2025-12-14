@@ -356,16 +356,22 @@ int KICC_getMultiOrderInfo(int state)
 	case 1:
 		// 조회 결과 확인
 		if (pScenario->m_DBAccess == -1) {
-			// 데이터베이스 오류
-			info_printf(localCh, "다중 주문 조회 실패");
-			return KICC_ExitSvc(0);
+			// [MODIFIED] 데이터베이스 오류 - 안내 멘트 재생 후 전화번호 재입력으로 이동
+			info_printf(localCh, "KICC_getMultiOrderInfo[%d] 다중 주문 조회 실패 - 전화번호 재입력 안내", state);
+			eprintf("KICC_getMultiOrderInfo[%d] 다중 주문 조회 실패 - 전화번호 재입력 안내", state);
+			new_guide();
+			set_guide(VOC_WAVE_ID, "ment/Travelport/no_order_msg");
+			setPostfunc(POST_PLAY, KICC_getMultiOrderInfo, 2, 0);  // state 2로 이동
+			return send_guide(NODTMF);
 		}
 
 		if (pScenario->m_MultiOrders.nOrderCount == 0) {
-			// 주문 없음
-			info_printf(localCh, "주문 조회되지 않음");
-			set_guide(VOC_WAVE_ID, "ment\\_common\\common_audio\\no_order_msg");
-			setPostfunc(POST_PLAY, KICC_ExitSvc, 0, 0);
+			// [MODIFIED] 주문 없음 - 안내 멘트 재생 후 전화번호 재입력으로 이동
+			info_printf(localCh, "KICC_getMultiOrderInfo[%d] 주문 조회되지 않음 - 전화번호 재입력 안내", state);
+			eprintf("KICC_getMultiOrderInfo[%d] 주문 조회되지 않음 - 전화번호 재입력 안내", state);
+			new_guide();
+			set_guide(VOC_WAVE_ID, "ment/Travelport/no_order_msg");
+			setPostfunc(POST_PLAY, KICC_getMultiOrderInfo, 2, 0);  // state 2로 이동
 			return send_guide(NODTMF);
 		}
 
@@ -379,6 +385,21 @@ int KICC_getMultiOrderInfo(int state)
 
 		// 주문 개수 및 총 금액 안내
 		return KICC_AnnounceMultiOrders(0);
+
+	case 2:
+		// [NEW] 주문 없음 안내 후 전화번호 재입력으로 복귀
+		info_printf(localCh, "KICC_getMultiOrderInfo[%d] 주문 없음>전화번호 재입력", state);
+		eprintf("KICC_getMultiOrderInfo[%d] 주문 없음>전화번호 재입력", state);
+
+		if (strcmp(pScenario->szArsType, "ARS") == 0) {
+			return KICC_ArsScenarioStart(1);
+		}
+		else if (strcmp(pScenario->szArsType, "SMS") == 0) {
+			return KICC_SMSScenarioStart(1);
+		}
+		else {
+			return pScenario->jobArs(0);
+		}
 	}
 
 	return 0;
@@ -448,7 +469,11 @@ int KICC_AnnounceMultiOrders(int state)
 
 	case 2:
 		// 사용자 확인
+		info_printf(localCh, "KICC_AnnounceMultiOrders[%d] state2 진입, c=%c(%d), szArsType=%s", state, c, c, pScenario->szArsType);
+		eprintf("KICC_AnnounceMultiOrders[%d] state2 진입, c=%c(%d), szArsType=%s", state, c, c, pScenario->szArsType);
+
 		if (!check_validdtmf(c, "12")) {
+			eprintf("KICC_AnnounceMultiOrders[%d] check_validdtmf 실패", state);
 			return send_error();
 		}
 
@@ -458,9 +483,20 @@ int KICC_AnnounceMultiOrders(int state)
 			return KICC_CardInput(0);
 		}
 		else {
-			// 취소 및 종료
-			info_printf(localCh, "사용자가 다중 주문 결제 취소");
-			return KICC_ExitSvc(0);
+			// [MODIFIED] 2번 입력 시 휴대폰 번호 입력 단계로 복귀
+			info_printf(localCh, "KICC_AnnounceMultiOrders[%d] 다중 주문 안내>확인 부> 아니오 - 전화번호 재입력", state);
+			eprintf("KICC_AnnounceMultiOrders[%d] 다중 주문 안내>확인 부> 아니오 - 전화번호 재입력", state);
+
+			// ARS 타입에 따라 분기 (KICC_getOrderInfo 함수의 패턴 참조)
+			if (strcmp(pScenario->szArsType, "ARS") == 0) {
+				return KICC_ArsScenarioStart(1);  // 휴대폰 번호 입력 state
+			}
+			else if (strcmp(pScenario->szArsType, "SMS") == 0) {
+				return KICC_SMSScenarioStart(1);
+			}
+			else {
+				return pScenario->jobArs(0);
+			}
 		}
 	}
 
@@ -2018,7 +2054,7 @@ int KICC_getOrderInfo(/* [in] */int state)
 			info_printf(localCh, "KICC_getOrderInfo [%d] 고객 주문 정보 안내 부> 존재하지 않은 주문 정보", state);
 			eprintf("KICC_getOrderInfo [%d] 고객 주문 정보 안내 부> 존재하지 않은 주문 정보", state);
 			new_guide();
-			set_guide(VOC_WAVE_ID, "ment\\_common\\common_audio\\no_order_msg");	 // "주문이 접수되지 않았습니다. 상점으로 문의하여 주시기 바랍니다."
+			set_guide(VOC_WAVE_ID, "ment/Travelport/no_order_msg");	 // "주문이 접수되지 않았습니다. 상점으로 문의하여 주시기 바랍니다."
 			setPostfunc(POST_PLAY, KICC_ExitSvc, 0, 0);
 			return send_guide(NODTMF);
 		}
