@@ -699,7 +699,7 @@ int KICC_ProcessMultiPayments(int state)
 		
 		// 결제 성공 안내 멘트 재생 (기존 단일 주문 흐름과 동일)
 		new_guide();
-		set_guide(VOC_WAVE_ID, "ment/_common/common_audio/pay_success_msg"); // 결제가 완료되었습니다.
+		set_guide(VOC_WAVE_ID, "ment/Travelport/pay_success_msg"); // 결제가 완료되었습니다.
 		setPostfunc(POST_PLAY, KICC_ProcessMultiPayments, 5, 0);
 		return send_guide(NODTMF);
 	}
@@ -1122,7 +1122,7 @@ int KICC_payARS(int state)
 			else
 			{
 				new_guide();
-				set_guide(VOC_WAVE_ID, "ment/_common/common_audio/pay_success_msg");// 결제가 완료 되었습니다.
+				set_guide(VOC_WAVE_ID, "ment/Travelport/pay_success_msg");// 결제가 완료 되었습니다.
 				setPostfunc(POST_PLAY, KICC_ExitSvc, 0, 0);
 				return send_guide(NODTMF);
 			}
@@ -1181,7 +1181,7 @@ int KICC_CardPw(int state)
 		info_printf(localCh, "KICC_CardPw [%d] 비밀번호 입력 부", state);
 		eprintf("KICC_CardPw [%d] 비밀번호 입력 부", state);
 		new_guide();
-		set_guide(VOC_WAVE_ID, "ment/_common/common_audio/input_pass_start");	 // "카드 비밀번호 네자리중, 앞, 두자리를 입력하여 주시기 바랍니다.
+		set_guide(VOC_WAVE_ID, "ment/Travelport/input_pass_start");	 // "카드 비밀번호 네자리중, 앞, 두자리를 입력하여 주시기 바랍니다.
 		setPostfunc(POST_DTMF, KICC_CardPw, 1, 0);
 		return send_guide(2);
 	case 1:
@@ -1800,7 +1800,7 @@ int KICC_CardInput(int state)
 			if (pScenario->m_bUseDbCardInfo) {
 				// [NEW] DB 사용 시: 4자리 입력 (종료 문자 없이 자동 처리)
 				info_printf(localCh, "[KICC] DB 사용 모드 - 카드번호 뒤 4자리 입력");
-				set_guide(VOC_WAVE_ID, "ment/_common/common_audio/input_card_num_4");	 // "카드번호 ..우물정자를..."
+				set_guide(VOC_WAVE_ID, "ment/Travelport/input_card_num_4");	 // "카드번호 ..우물정자를..."
 				setPostfunc(POST_DTMF, KICC_CardInput, 1, 0);
 				return send_guide(4);
 			}
@@ -2132,8 +2132,8 @@ int KICC_ArsScenarioStart(/* [in] */int state)
 		new_guide();
 		info_printf(localCh, "KICC_ArsScenarioStart [%d] 인사말...", state);
 		eprintf("KICC_ArsScenarioStart [%d] 인사말", state);
-		sprintf_s(TempPath, sizeof(TempPath), "audio\\shop_intro\\%s", (*lpmt)->dnis);
-		set_guide(VOC_WAVE_ID, TempPath);	 // "인사말"
+		// sprintf_s(TempPath, sizeof(TempPath), "audio\\shop_intro\\%s", (*lpmt)->dnis);
+		// set_guide(VOC_WAVE_ID, TempPath);	 // "인사말"
 		setPostfunc(POST_PLAY, KICC_ArsScenarioStart, 1, 0);
 		return send_guide(NODTMF);
 	}
@@ -2142,7 +2142,7 @@ int KICC_ArsScenarioStart(/* [in] */int state)
 		new_guide();
 		info_printf(localCh, "KICC_ArsScenarioStart [%d] 고객 전화 번호 입력 부...", state);
 		eprintf("KICC_ArsScenarioStart [%d] 고객 전화 번호 입력 부", state);
-		set_guide(VOC_WAVE_ID, "ment\\_common\\common_audio\\input_telnum_start");	 // "전화 번호 입력"
+		set_guide(VOC_WAVE_ID, "ment\\Travelport\\input_telnum_start");	 // "전화 번호 입력"
 		setPostfunc(POST_DTMF, KICC_ArsScenarioStart, 2, 0);
 		return send_guide(13);
 
@@ -2280,8 +2280,8 @@ int KICC_SMSScenarioStart(/* [in] */int state)
 		new_guide();
 		info_printf(localCh, "KICC_SMSScenarioStart [%d] 인사말...", state);
 		eprintf("KICC_SMSScenarioStart [%d] 인사말", state);
-		sprintf_s(TempPath, sizeof(TempPath), "audio\\shop_intro\\%s", (*lpmt)->dnis);
-		set_guide(VOC_WAVE_ID, TempPath);	 // "인사말"
+		// sprintf_s(TempPath, sizeof(TempPath), "audio\\shop_intro\\%s", (*lpmt)->dnis);
+		// set_guide(VOC_WAVE_ID, TempPath);	 // "인사말"
 		setPostfunc(POST_PLAY, KICC_SMSScenarioStart, 1, 0);
 		return send_guide(NODTMF);
 	}
