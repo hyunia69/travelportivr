@@ -1,4 +1,6 @@
-﻿
+
+// [SKIP_PHONE_CONFIRM] 전화번호 확인 단계 생략 여부 (1: 생략, 0: 기존 유지)
+#define SKIP_PHONE_CONFIRM  1
 
 // 카드 번호
 typedef struct CarsInfo

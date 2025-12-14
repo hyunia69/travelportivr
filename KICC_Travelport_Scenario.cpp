@@ -2165,6 +2165,24 @@ int KICC_ArsScenarioStart(/* [in] */int state)
 		}
 		new_guide();
 
+#if SKIP_PHONE_CONFIRM
+		// [MODIFIED] 전화번호 확인 단계 생략 - 바로 다음 단계로 진행
+		info_printf(localCh, "KICC_ArsScenarioStart [%d] 고객 전화 번호 입력 부>확인 생략, 바로 주문조회 진행", state);
+		eprintf("KICC_ArsScenarioStart [%d] 고객 전화 번호 입력 부>확인 생략, 바로 주문조회 진행", state);
+
+		// 입력된 전화번호 저장
+		if (((CKICC_Scenario *)(*lpmt)->pScenario)->m_Myport == (*lpmt))
+		{
+			memset(pScenario->m_szInputTel, 0x00, sizeof(pScenario->m_szInputTel));
+			memcpy(pScenario->m_szInputTel, (*lpmt)->refinfo, sizeof(pScenario->m_szInputTel) - 1);
+		}
+
+		// 다중 주문 조회로 바로 진행
+		pScenario->m_bMultiOrderMode = TRUE;
+		setPostfunc(POST_NET, KICC_getMultiOrderInfo, 0, 0);
+		return getMultiOrderInfo_host(90);
+#else
+		// 기존 코드: TTS로 전화번호 확인 후 1/2번 선택
 		info_printf(localCh, "KICC_ArsScenarioStart [%d] 고객 전화 번호 입력 부>확인 부", state);
 		eprintf("KICC_ArsScenarioStart [%d] 고객 전화 번호 입력 부>확인 부", state);
 		if (TTS_Play)
@@ -2189,6 +2207,10 @@ int KICC_ArsScenarioStart(/* [in] */int state)
 			setPostfunc(POST_PLAY, KICC_ExitSvc, 0, 0);
 			return send_guide(NODTMF);
 		}
+#endif
+
+#if !SKIP_PHONE_CONFIRM
+	// [SKIP_PHONE_CONFIRM] 전화번호 확인 단계 생략 시 아래 case 3, 4는 사용되지 않음
 	case 3:
 		if (pScenario->m_TTSAccess == -1)//201701.04
 		{
@@ -2242,6 +2264,7 @@ int KICC_ArsScenarioStart(/* [in] */int state)
 
 			return KICC_ArsScenarioStart(1);
 		}
+#endif  // !SKIP_PHONE_CONFIRM
 
 	case 0xffff:
 		return  goto_hookon();
