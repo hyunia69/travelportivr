@@ -89,6 +89,9 @@ int KICC_CardInput(int state);
 #define TRUE		1		// 참
 #define FALSE		0		// 거짓
 
+// [2025-12-15 NEW] 휴대폰 번호 입력 최대 재시도 횟수
+#define MAX_PHONE_RETRY_COUNT  3
+
 #define HI_OK		0
 #define HI_COMM 	98	// 통신 장애
 #define HI_BADPKT	97	// BAD Packet
@@ -356,28 +359,53 @@ int KICC_getMultiOrderInfo(int state)
 	case 1:
 		// 조회 결과 확인
 		if (pScenario->m_DBAccess == -1) {
-			// [MODIFIED] 데이터베이스 오류 - 안내 멘트 재생 후 전화번호 재입력으로 이동
-			info_printf(localCh, "KICC_getMultiOrderInfo[%d] 다중 주문 조회 실패 - 전화번호 재입력 안내", state);
-			eprintf("KICC_getMultiOrderInfo[%d] 다중 주문 조회 실패 - 전화번호 재입력 안내", state);
+			// [MODIFIED] 데이터베이스 오류 - 재시도 횟수 확인 후 분기
+			pScenario->m_nPhoneRetryCount++;
+			info_printf(localCh, "KICC_getMultiOrderInfo[%d] 다중 주문 조회 실패 (재시도: %d/%d)",
+						state, pScenario->m_nPhoneRetryCount, MAX_PHONE_RETRY_COUNT);
+			eprintf("KICC_getMultiOrderInfo[%d] 다중 주문 조회 실패 (재시도: %d/%d)",
+					state, pScenario->m_nPhoneRetryCount, MAX_PHONE_RETRY_COUNT);
+
 			new_guide();
 			set_guide(VOC_WAVE_ID, "ment/Travelport/no_order_msg");
-			setPostfunc(POST_PLAY, KICC_getMultiOrderInfo, 2, 0);  // state 2로 이동
+
+			if (pScenario->m_nPhoneRetryCount >= MAX_PHONE_RETRY_COUNT) {
+				// 3회 실패 - 종료 안내로 이동
+				setPostfunc(POST_PLAY, KICC_getMultiOrderInfo, 3, 0);
+			} else {
+				// 재시도 가능 - 전화번호 재입력으로 이동
+				setPostfunc(POST_PLAY, KICC_getMultiOrderInfo, 2, 0);
+			}
 			return send_guide(NODTMF);
 		}
 
 		if (pScenario->m_MultiOrders.nOrderCount == 0) {
-			// [MODIFIED] 주문 없음 - 안내 멘트 재생 후 전화번호 재입력으로 이동
-			info_printf(localCh, "KICC_getMultiOrderInfo[%d] 주문 조회되지 않음 - 전화번호 재입력 안내", state);
-			eprintf("KICC_getMultiOrderInfo[%d] 주문 조회되지 않음 - 전화번호 재입력 안내", state);
+			// [MODIFIED] 주문 없음 - 재시도 횟수 확인 후 분기
+			pScenario->m_nPhoneRetryCount++;
+			info_printf(localCh, "KICC_getMultiOrderInfo[%d] 주문 조회되지 않음 (재시도: %d/%d)",
+						state, pScenario->m_nPhoneRetryCount, MAX_PHONE_RETRY_COUNT);
+			eprintf("KICC_getMultiOrderInfo[%d] 주문 조회되지 않음 (재시도: %d/%d)",
+					state, pScenario->m_nPhoneRetryCount, MAX_PHONE_RETRY_COUNT);
+
 			new_guide();
 			set_guide(VOC_WAVE_ID, "ment/Travelport/no_order_msg");
-			setPostfunc(POST_PLAY, KICC_getMultiOrderInfo, 2, 0);  // state 2로 이동
+
+			if (pScenario->m_nPhoneRetryCount >= MAX_PHONE_RETRY_COUNT) {
+				// 3회 실패 - 종료 안내로 이동
+				setPostfunc(POST_PLAY, KICC_getMultiOrderInfo, 3, 0);
+			} else {
+				// 재시도 가능 - 전화번호 재입력으로 이동
+				setPostfunc(POST_PLAY, KICC_getMultiOrderInfo, 2, 0);
+			}
 			return send_guide(NODTMF);
 		}
 
+		// 조회 성공 - 재시도 카운트 초기화
+		pScenario->m_nPhoneRetryCount = 0;
+
 		// 조회된 주문 정보 로깅
 		if (pScenario->m_MultiOrders.nOrderCount > 0) {
-			info_printf(localCh, "조회된 주문 건수: %d, 총 금액: ?%d, AUTH_NO: %s",
+			info_printf(localCh, "조회된 주문 건수: %d, 총 금액: %d, AUTH_NO: %s",
 					   pScenario->m_MultiOrders.nOrderCount,
 					   pScenario->m_MultiOrders.nTotalAmount,
 					   pScenario->m_szAuthNo);
@@ -387,9 +415,11 @@ int KICC_getMultiOrderInfo(int state)
 		return KICC_AnnounceMultiOrders(0);
 
 	case 2:
-		// [NEW] 주문 없음 안내 후 전화번호 재입력으로 복귀
-		info_printf(localCh, "KICC_getMultiOrderInfo[%d] 주문 없음>전화번호 재입력", state);
-		eprintf("KICC_getMultiOrderInfo[%d] 주문 없음>전화번호 재입력", state);
+		// [MODIFIED] 주문 없음 안내 후 전화번호 재입력으로 복귀
+		info_printf(localCh, "KICC_getMultiOrderInfo[%d] 주문 없음>전화번호 재입력 (재시도: %d/%d)",
+					state, pScenario->m_nPhoneRetryCount, MAX_PHONE_RETRY_COUNT);
+		eprintf("KICC_getMultiOrderInfo[%d] 주문 없음>전화번호 재입력 (재시도: %d/%d)",
+				state, pScenario->m_nPhoneRetryCount, MAX_PHONE_RETRY_COUNT);
 
 		if (strcmp(pScenario->szArsType, "ARS") == 0) {
 			return KICC_ArsScenarioStart(1);
@@ -400,6 +430,18 @@ int KICC_getMultiOrderInfo(int state)
 		else {
 			return pScenario->jobArs(0);
 		}
+
+	case 3:
+		// [NEW] 3회 재시도 실패 - 서비스 종료
+		info_printf(localCh, "KICC_getMultiOrderInfo[%d] 전화번호 입력 %d회 실패>서비스 종료",
+					state, MAX_PHONE_RETRY_COUNT);
+		eprintf("KICC_getMultiOrderInfo[%d] 전화번호 입력 %d회 실패>서비스 종료",
+				state, MAX_PHONE_RETRY_COUNT);
+
+		// 일반 종료 멘트 재생 후 서비스 종료
+		set_guide(399);
+		setPostfunc(POST_PLAY, KICC_ExitSvc, 0, 0);
+		return send_guide(NODTMF);
 	}
 
 	return 0;
@@ -2499,6 +2541,11 @@ int CKICC_Scenario::ScenarioInit(LPMTP *Port, char *ArsType)
 	memset(m_szDB_ExpireDate, 0x00, sizeof(m_szDB_ExpireDate));
 	memset(m_szDB_InstallPeriod, 0x00, sizeof(m_szDB_InstallPeriod));
 	m_bUseDbCardInfo = 1;  // 기본값: DB 사용 (1:TRUE, 0:FALSE로 변경하면 기존 방식)
+
+	// ========================================
+	// [2025-12-15 NEW] 휴대폰 번호 재시도 카운트 초기화
+	// ========================================
+	m_nPhoneRetryCount = 0;
 
 	return 0;
 }
