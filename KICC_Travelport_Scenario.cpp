@@ -1960,6 +1960,39 @@ int KICC_CardInput(int state)
 
 			new_guide();
 
+			// ========================================
+			// [MODIFIED] 카드번호 확인 단계 스킵
+			// 형식오류가 없으면 바로 다음 단계로 진행
+			// ========================================
+			info_printf(localCh, "KICC_CardInput [%d]  Card 번호 검증 완료 - 확인 단계 스킵", state);
+			eprintf("KICC_CardInput [%d]  Card 번호 검증 완료: %s", state, pScenario->m_CardInfo.Card_Num);
+
+			// DB 사용 여부에 따라 다음 단계 결정
+			if (pScenario->m_bUseDbCardInfo) {
+				// [DB 모드] 유효기간 DB에서 가져오기
+				strncpy(pScenario->m_CardInfo.ExpireDt,
+					pScenario->m_szDB_ExpireDate,
+					sizeof(pScenario->m_CardInfo.ExpireDt) - 1);
+
+				info_printf(localCh, "[KICC] DB 유효기간 사용: %s", pScenario->m_CardInfo.ExpireDt);
+
+				// 주민번호 초기화 (빈 값)
+				memset(pScenario->m_CardInfo.SecretNo, 0x00, sizeof(pScenario->m_CardInfo.SecretNo));
+
+				info_printf(localCh, "[KICC] 카드번호 확인 스킵 → 비밀번호 입력으로 이동");
+				return KICC_CardPw(0);
+			}
+			else {
+				// [기존 모드] 유효기간 입력으로 이동
+				info_printf(localCh, "[KICC] 카드번호 확인 스킵 → 유효기간 입력으로 이동");
+				return KICC_EffecDate(0);
+			}
+
+			// ========================================
+			// [PRESERVED] 기존 TTS 확인 로직 (비활성화)
+			// 향후 필요시 조건부 활성화를 위해 코드 보존
+			// ========================================
+#if 0  // 카드번호 확인 단계 비활성화
 			info_printf(localCh, "KICC_CardInput [%d]  Card 번호 입력부>확인 부(TTS)", state);
 			eprintf("KICC_CardInput [%d]  Card 번호 입력부>확인 부(TTS)", state);
 			if (TTS_Play)
@@ -1983,6 +2016,7 @@ int KICC_CardInput(int state)
 				setPostfunc(POST_PLAY, KICC_ExitSvc, 0, 0);
 				return send_guide(NODTMF);
 			}
+#endif
 		}
 		case 2:
 			info_printf(localCh, "KICC_CardInput [%d] Card 번호 입력부>확인 부", state);
