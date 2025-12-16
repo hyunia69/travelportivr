@@ -468,7 +468,8 @@ int KICC_AnnounceMultiOrders(int state)
 			setPostfunc(POST_NET, KICC_AnnounceMultiOrders, 1, 0);
 			return TTS_Play(
 				(*lpmt)->chanID, 92,
-				"%d건의 주문이 조회되었습니다. 총 결제 금액은 %d원입니다.",
+				// "%d건의 주문이 조회되었습니다. 총 결제 금액은 %d원입니다.",
+				"고객님의 항공권 결제 금액은 %d건 , 총 승인금액은 %d 원입니다",
 				pScenario->m_MultiOrders.nOrderCount,
 				pScenario->m_MultiOrders.nTotalAmount
 			);
