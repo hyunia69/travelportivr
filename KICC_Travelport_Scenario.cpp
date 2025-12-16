@@ -669,16 +669,12 @@ int KICC_ProcessMultiPayments(int state)
 			   pScenario->m_CardResInfo.REPLY_CODE,
 			   pScenario->m_CardResInfo.REPLY_MESSAGE);
 		
-		// REPLY_CODE가 "0000"이면 성공, 아니면 실패
-		// m_PayResult가 1이거나 REPLY_CODE가 "0000"이면 성공
+		// [MODIFIED] REPLY_CODE가 "0000"이면 성공
+		// 주의: m_PayResult는 DB 작업 결과이므로 결제 성공 판단에 사용하면 안됨
 		BOOL bSuccess = FALSE;
-		if (pScenario->m_PayResult == 1) {
+		if (strcmp(pScenario->m_CardResInfo.REPLY_CODE, "0000") == 0) {
 			bSuccess = TRUE;
-		}
-		else if (strcmp(pScenario->m_CardResInfo.REPLY_CODE, "0000") == 0) {
-			// REPLY_CODE가 "0000"이면 성공으로 간주
-			bSuccess = TRUE;
-			pScenario->m_PayResult = 1;  // m_PayResult도 업데이트
+			pScenario->m_PayResult = 1;  // 성공 시 m_PayResult도 업데이트
 		}
 		
 		if (bSuccess) {
@@ -733,16 +729,10 @@ int KICC_ProcessMultiPayments(int state)
 					sizeof(szCurrentOrderNo2) - 1);
 		}
 		
-		// 성공 여부 확인 (REPLY_CODE 기준)
-		BOOL bSuccess2 = FALSE;
-		if (pScenario->m_PayResult == 1) {
-			bSuccess2 = TRUE;
-		}
-		else if (strcmp(pScenario->m_CardResInfo.REPLY_CODE, "0000") == 0) {
-			bSuccess2 = TRUE;
-		}
-		
-		if (bSuccess2 && strcmp(pScenario->m_CardResInfo.REPLY_CODE, "0000") == 0) {
+		// [MODIFIED] REPLY_CODE가 "0000"이면 성공
+		BOOL bSuccess2 = (strcmp(pScenario->m_CardResInfo.REPLY_CODE, "0000") == 0);
+
+		if (bSuccess2) {
 			// 결제 성공한 경우: 주문 상태 업데이트
 			eprintf("[DB저장] 주문번호:%s 주문 상태 업데이트 시작", szCurrentOrderNo2);
 			setPostfunc(POST_NET, KICC_ProcessMultiPayments, 4, 0);
@@ -839,7 +829,6 @@ int KICC_MultiPaymentSummary(int state)
 					   pScenario->m_MultiOrders.nProcessedCount,
 					   pScenario->m_MultiOrders.nFailedCount,
 					   pScenario->m_MultiOrders.szFailedOrders);
-
 			if (TTS_Play) {
 				setPostfunc(POST_NET, KICC_MultiPaymentSummary, 1, 0);
 				return TTS_Play(
@@ -855,12 +844,34 @@ int KICC_MultiPaymentSummary(int state)
 		return send_guide(NODTMF);
 
 	case 1:
-		// TTS 재생 완료 후 종료
-		eprintf("[최종안내] TTS 재생 완료, 서비스 종료");
+		// TTS 재생 완료 후 실제 TTS 파일 재생
+		eprintf("[최종안내] TTS 재생 완료, TTS 파일 재생 시작");
+
+		// [MODIFIED] TTS 서버 오류 체크
+		if (pScenario->m_TTSAccess == -1) {
+			new_guide();
+			eprintf("[최종안내] TTS 서버 오류, 타임아웃 멘트 재생");
+			set_guide(VOC_WAVE_ID, "ment\\TTS_TimeOut");
+			setPostfunc(POST_PLAY, KICC_ExitSvc, 0, 0);
+			return send_guide(NODTMF);
+		}
+
+		// [MODIFIED] szTTSFile을 사용하여 실제 TTS 파일 재생
+		if (strlen(pScenario->szTTSFile) > 0) {
+			new_guide();
+			char TTSFile[2048 + 1] = { 0x00, };
+			sprintf(TTSFile, "%s", pScenario->szTTSFile);
+			eprintf("[최종안내] TTS 파일 재생: %s", TTSFile);
+			set_guide(VOC_TTS_ID, TTSFile);
+			memset(pScenario->szTTSFile, 0x00, sizeof(pScenario->szTTSFile));
+
+			setPostfunc(POST_PLAY, KICC_ExitSvc, 0, 0);
+			return send_guide(NODTMF);
+		}
+
+		// szTTSFile이 비어있으면 바로 종료
+		eprintf("[최종안내] szTTSFile 비어있음, 바로 종료");
 		return KICC_ExitSvc(0);
-		// 요약 후 종료
-		setPostfunc(POST_PLAY, KICC_ExitSvc, 0, 0);
-		return send_guide(NODTMF);
 	}
 
 	return 0;
