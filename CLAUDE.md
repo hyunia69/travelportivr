@@ -124,6 +124,7 @@ KICC_LOG=./KiccLog                 # 로그 디렉터리
 | [IMPLEMENTATION_STATUS.md](docs/IMPLEMENTATION_STATUS.md) | DB 필드 구현 진행 상황 |
 | [IMPLEMENT_CURSOR.md](docs/IMPLEMENT_CURSOR.md) | 구현 완료 상태 확인 |
 | [SUMMARY.md](docs/SUMMARY.md) | 다중 주문 기능 구현 요약 |
+| [DESIGN_FAIL_CASE.md](docs/DESIGN_FAIL_CASE.md) | 다중 주문 전부 실패 시 카드번호 재입력 설계 |
 
 ## 개발 가이드
 

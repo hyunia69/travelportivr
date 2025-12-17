@@ -92,6 +92,9 @@ int KICC_CardInput(int state);
 // [2025-12-15 NEW] 휴대폰 번호 입력 최대 재시도 횟수
 #define MAX_PHONE_RETRY_COUNT  3
 
+// [2025-12-17 NEW] 다중 주문 전부 실패 시 카드번호 재입력 최대 횟수
+#define MAX_CARD_RETRY  3
+
 #define HI_OK		0
 #define HI_COMM 	98	// 통신 장애
 #define HI_BADPKT	97	// BAD Packet
@@ -803,40 +806,84 @@ int KICC_MultiPaymentSummary(int state)
 	case 0:
 		new_guide();
 
-		eprintf("[최종결과] 총주문:%d, 성공:%d, 실패:%d, 실패주문:%s",
+		// [MODIFIED] 로그에 재입력 횟수 추가
+		eprintf("[최종결과] 총주문:%d, 성공:%d, 실패:%d, 실패주문:%s, 재입력횟수:%d",
 			   pScenario->m_MultiOrders.nOrderCount,
 			   pScenario->m_MultiOrders.nProcessedCount,
 			   pScenario->m_MultiOrders.nFailedCount,
-			   pScenario->m_MultiOrders.szFailedOrders);
+			   pScenario->m_MultiOrders.szFailedOrders,
+			   pScenario->m_nCardRetryCount);
 
 		if (pScenario->m_MultiOrders.nFailedCount == 0) {
 			// 모두 성공
 			eprintf("모든 %d건 주문이 성공적으로 처리됨",
 					   pScenario->m_MultiOrders.nProcessedCount);
 
+			// [MODIFIED] 재입력 횟수 초기화 (성공 시)
+			pScenario->m_nCardRetryCount = 0;
+
 			if (TTS_Play) {
 				setPostfunc(POST_NET, KICC_MultiPaymentSummary, 1, 0);
+				// [MODIFIED] TTS 멘트 변경 - 담당직원 연결 안내 추가
 				return TTS_Play(
 					(*lpmt)->chanID, 92,
-					"총 %d건의 결제가 정상적으로 처리되었습니다.",
+					"%d건의 결제가 완료되었습니다. 담당직원을 연결해 드리겠습니다.",
 					pScenario->m_MultiOrders.nProcessedCount
 				);
 			}
 		}
+		// [NEW] 전부 실패 (nProcessedCount == 0, nFailedCount > 0)
+		else if (pScenario->m_MultiOrders.nProcessedCount == 0) {
+			// 전부 실패
+			eprintf("전부 실패: 성공=%d, 실패=%d, 실패주문:%s",
+					   pScenario->m_MultiOrders.nProcessedCount,
+					   pScenario->m_MultiOrders.nFailedCount,
+					   pScenario->m_MultiOrders.szFailedOrders);
+
+			// 재입력 횟수 확인
+			if (pScenario->m_nCardRetryCount < MAX_CARD_RETRY) {
+				// 재입력 가능 - 안내 후 사용자 선택 (1번: 재결제, 2번: 담당직원 연결)
+				pScenario->m_nCardRetryCount++;
+				eprintf("[전부실패] 재입력 횟수: %d/%d - 사용자 선택 안내",
+						   pScenario->m_nCardRetryCount, MAX_CARD_RETRY);
+
+				if (TTS_Play) {
+					setPostfunc(POST_NET, KICC_MultiPaymentSummary, 2, 0);  // state 2: TTS 재생 후 DTMF 입력 대기
+					return TTS_Play(
+						(*lpmt)->chanID, 92,
+						"%d건 결제가 모두 실패하였습니다. 다시 결제를 진행하시려면 1번, 담당 직원을 연결하시려면 2번을 눌러 주시기 바랍니다.",
+						pScenario->m_MultiOrders.nFailedCount
+					);
+				}
+			}
+			else {
+				// 재입력 횟수 초과 - 안내 후 종료
+				eprintf("[전부실패] 재입력 횟수 초과: %d/%d - 서비스 종료",
+						   pScenario->m_nCardRetryCount, MAX_CARD_RETRY);
+
+				if (TTS_Play) {
+					setPostfunc(POST_NET, KICC_MultiPaymentSummary, 1, 0);  // state 1: 종료
+					return TTS_Play(
+						(*lpmt)->chanID, 92,
+						"결제에 실패하였습니다. 다시 전화해 주시기 바랍니다."
+					);
+				}
+			}
+		}
 		else {
-			// 일부 실패
+			// 부분 실패 (일부 성공, 일부 실패)
 			eprintf("부분 성공: 성공=%d, 실패=%d, 실패주문:%s",
 					   pScenario->m_MultiOrders.nProcessedCount,
 					   pScenario->m_MultiOrders.nFailedCount,
 					   pScenario->m_MultiOrders.szFailedOrders);
 			if (TTS_Play) {
 				setPostfunc(POST_NET, KICC_MultiPaymentSummary, 1, 0);
+				// [MODIFIED] TTS 멘트 변경 - 담당직원 연결 안내 추가
 				return TTS_Play(
 					(*lpmt)->chanID, 92,
-					"%d건 결제 완료, %d건 결제 실패. 실패 주문번호: %s",
+					"%d건은 결제가 완료되었으며 %d건은 결제 실패하였습니다. 담당직원을 연결해 드리겠습니다.",
 					pScenario->m_MultiOrders.nProcessedCount,
-					pScenario->m_MultiOrders.nFailedCount,
-					pScenario->m_MultiOrders.szFailedOrders
+					pScenario->m_MultiOrders.nFailedCount
 				);
 			}
 		}
@@ -872,6 +919,102 @@ int KICC_MultiPaymentSummary(int state)
 		// szTTSFile이 비어있으면 바로 종료
 		eprintf("[최종안내] szTTSFile 비어있음, 바로 종료");
 		return KICC_ExitSvc(0);
+
+	// [NEW] 전부 실패 TTS 재생 완료 후 DTMF 입력 대기
+	case 2:
+		eprintf("[전부실패] TTS 재생 완료 - DTMF 입력 대기");
+
+		// TTS 서버 오류 체크
+		if (pScenario->m_TTSAccess == -1) {
+			new_guide();
+			eprintf("[전부실패] TTS 서버 오류, 타임아웃 멘트 재생 후 바로 DTMF 대기");
+			set_guide(VOC_WAVE_ID, "ment\\TTS_TimeOut");
+			// [MODIFIED] 바로 state 4로 이동하여 DTMF 처리
+			setPostfunc(POST_DTMF, KICC_MultiPaymentSummary, 4, 10);  // 10초 타임아웃
+			return send_guide(1);  // 1자리 DTMF 입력 대기
+		}
+
+		// [MODIFIED] szTTSFile을 사용하여 실제 TTS 파일 재생 + 바로 DTMF 입력 대기
+		// 추가 확인 멘트("맞으면 1번...") 없이 바로 사용자 입력 대기
+		if (strlen(pScenario->szTTSFile) > 0) {
+			new_guide();
+			char TTSFile[2048 + 1] = { 0x00, };
+			sprintf(TTSFile, "%s", pScenario->szTTSFile);
+			eprintf("[전부실패] TTS 파일 재생 후 바로 DTMF 대기: %s", TTSFile);
+			set_guide(VOC_TTS_ID, TTSFile);
+			memset(pScenario->szTTSFile, 0x00, sizeof(pScenario->szTTSFile));
+
+			// [MODIFIED] 바로 state 4로 이동하여 DTMF 처리
+			// 기존: POST_PLAY → state 3 (input_confirm 재생) → state 4
+			// 수정: POST_DTMF → state 4 (바로 DTMF 대기)
+			setPostfunc(POST_DTMF, KICC_MultiPaymentSummary, 4, 10);  // 10초 타임아웃
+			return send_guide(1);  // 1자리 DTMF 입력 대기
+		}
+
+		// szTTSFile이 비어있으면 바로 DTMF 대기로 (state 3)
+		eprintf("[전부실패] szTTSFile 비어있음 - state 3으로 이동 (대기음 재생)");
+		// fall through to state 3
+
+	// [MODIFIED] DTMF 입력 대기 - fallback용 (확인 멘트 없이 대기음만)
+	case 3:
+		eprintf("[전부실패] DTMF 입력 대기 (대기음) - 1번: 재결제, 2번: 종료");
+
+		new_guide();
+		// [MODIFIED] 불필요한 input_confirm 멘트 제거
+		// 기존: set_guide(VOC_WAVE_ID, "ment\\_common\\common_audio\\input_confirm");
+		// 수정: 대기음만 재생 (확인 멘트 없음)
+		set_guide(VOC_WAVE_ID, "ment\\wait_sound");  // 대기음만 재생
+		setPostfunc(POST_DTMF, KICC_MultiPaymentSummary, 4, 10);  // 10초 타임아웃, DTMF 대기
+		return send_guide(1);  // 1자리 DTMF 입력 대기
+
+	// [NEW] DTMF 입력 결과 처리
+	case 4:
+		{
+			// DTMF 입력 재안내 횟수 (static 변수로 함수 내에서 유지)
+			// 유효한 입력(1번 또는 2번) 시 초기화됨
+			static int s_nDTMFRetryCount = 0;
+
+			char cDTMF = (*lpmt)->dtmfs[0];
+			eprintf("[전부실패] DTMF 입력: %c (재안내 횟수: %d/3)", cDTMF, s_nDTMFRetryCount);
+
+			if (cDTMF == '1') {
+				// 1번: 다시 결제 진행 - 카드번호 입력으로 복귀
+				eprintf("[전부실패] 1번 선택 - 카드번호 재입력으로 복귀");
+				s_nDTMFRetryCount = 0;  // 재안내 횟수 초기화
+				return KICC_CardInput(0);
+			}
+			else if (cDTMF == '2') {
+				// 2번: 담당 직원 연결 - 종료
+				eprintf("[전부실패] 2번 선택 - 담당 직원 연결 (종료)");
+				s_nDTMFRetryCount = 0;  // 재안내 횟수 초기화
+				return KICC_ExitSvc(0);
+			}
+			else {
+				// 잘못된 입력 또는 타임아웃 - 재안내
+				s_nDTMFRetryCount++;
+
+				if (s_nDTMFRetryCount >= 3) {
+					// 3회 재시도 후 자동 종료
+					eprintf("[전부실패] 입력 재시도 초과 (%d회) - 자동 종료", s_nDTMFRetryCount);
+					s_nDTMFRetryCount = 0;  // 초기화
+					return KICC_ExitSvc(0);
+				}
+
+				eprintf("[전부실패] 잘못된 입력/타임아웃 - 재안내 (%d/3)", s_nDTMFRetryCount);
+
+				// 멘트 재안내
+				if (TTS_Play) {
+					setPostfunc(POST_NET, KICC_MultiPaymentSummary, 2, 0);
+					return TTS_Play(
+						(*lpmt)->chanID, 92,
+						"다시 결제를 진행하시려면 1번, 담당 직원을 연결하시려면 2번을 눌러 주시기 바랍니다."
+					);
+				}
+
+				// TTS 실패 시 바로 DTMF 대기
+				return KICC_MultiPaymentSummary(3);
+			}
+		}
 	}
 
 	return 0;
@@ -2592,6 +2735,11 @@ int CKICC_Scenario::ScenarioInit(LPMTP *Port, char *ArsType)
 	// [2025-12-15 NEW] 휴대폰 번호 재시도 카운트 초기화
 	// ========================================
 	m_nPhoneRetryCount = 0;
+
+	// ========================================
+	// [2025-12-17 NEW] 카드번호 재입력 카운트 초기화
+	// ========================================
+	m_nCardRetryCount = 0;
 
 	return 0;
 }
