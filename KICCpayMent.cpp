@@ -626,7 +626,7 @@ unsigned int __stdcall KiccArsPayProcess(void *data)
 	char    szCardTxType[2 + 1] = "20";  // [필수]처리종류 승인(20)
 	char    szReqType[1 + 1] = "0";      // [필수]카드결제 전문 암호화 (0:SSL 1:ISP, 2:안심 결제)
 	char    szNoint[2 + 1] = "00";       // [필수]무이자여부(일반:00, 무이자:02
-	char    szCertType[1 + 1] = "0";     // [필수]인증여부 (인증:0 , 비인증:1) , 비밀번호 인증 하지 않음(1)으로 한다.
+	char    szCertType[1 + 1] = "4";     // [필수]인증여부 (인증:0 , 비인증:1, 카유비:4) , 비밀번호 인증 하지 않음(1)으로 한다.
 	char    szWcc[1 + 1] = "@";          // [필수]wcc
 	char    szUserType[1 + 1] = "0";     // [선택]카드구분 : 인증여부에 따라 필수(개인: 0, 법인:1)
 

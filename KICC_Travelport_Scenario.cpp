@@ -571,6 +571,17 @@ int KICC_ProcessMultiPayments(int state)
 			   sizeof(pScenario->m_MultiOrders.szFailedOrders));
 
 		info_printf(localCh, "%d건 주문 처리 시작", nTotalCount);
+
+		// [MODIFIED] 결제 시작 전 대기 안내 멘트 한 번만 재생
+		// "결제 요청 중입니다. 잠시만 기다려 주시기 바랍니다."
+		new_guide();
+		set_guide(VOC_WAVE_ID, "ment/Travelport/pay_request_wait");
+		setPostfunc(POST_PLAY, KICC_ProcessMultiPayments, 7, 0);
+		return send_guide(NODTMF);
+
+	case 7:
+		// [NEW] 대기 멘트 재생 완료 후 결제 루프 시작
+		eprintf("[결제시작] 대기 멘트 재생 완료, %d건 결제 루프 시작", nTotalCount);
 		return KICC_ProcessMultiPayments(1);
 
 	case 1:
@@ -642,7 +653,7 @@ int KICC_ProcessMultiPayments(int state)
 				   pScenario->m_CardResInfo.TOTAMOUNT,
 				   pScenario->m_CardResInfo.TERMINAL_ID);
 
-		// 현재 주문에 대한 결제 시작
+		// [MODIFIED] 바로 승인 요청 (대기 멘트는 state 0에서 한 번만 재생)
 		setPostfunc(POST_NET, KICC_ProcessMultiPayments, 2, 0);
 		return KiccPaymemt_host(90);
 
@@ -752,42 +763,33 @@ int KICC_ProcessMultiPayments(int state)
 
 	case 4:
 	{
-		// 주문 상태 업데이트 결과 확인
+		// [MODIFIED] 주문 상태 업데이트 결과 확인 후 바로 다음 주문으로 이동
+		// 개별 승인 완료 멘트 삭제 - 최종 요약에서만 안내 (ANALYZE_APPROVAL.md 수정 요청사항)
 		eprintf("[DB저장] 주문 상태 업데이트 결과: m_PayResult=%d", pScenario->m_PayResult);
-		
-		// 현재 주문번호 가져오기
+
+		// 현재 주문번호 로깅
 		char szCurrentOrderNo3[32 + 1];
 		memset(szCurrentOrderNo3, 0x00, sizeof(szCurrentOrderNo3));
 		if (nCurrentIdx < pScenario->m_MultiOrders.nOrderCount) {
-			strncpy(szCurrentOrderNo3, 
-					pScenario->m_MultiOrders.orders[nCurrentIdx].ORDER_NO, 
+			strncpy(szCurrentOrderNo3,
+					pScenario->m_MultiOrders.orders[nCurrentIdx].ORDER_NO,
 					sizeof(szCurrentOrderNo3) - 1);
 		}
 		else {
-			strncpy(szCurrentOrderNo3, 
-					pScenario->m_CardResInfo.ORDER_NO, 
+			strncpy(szCurrentOrderNo3,
+					pScenario->m_CardResInfo.ORDER_NO,
 					sizeof(szCurrentOrderNo3) - 1);
 		}
-		
-		// 결제 성공 안내 멘트 재생 (기존 단일 주문 흐름과 동일)
-		new_guide();
-		set_guide(VOC_WAVE_ID, "ment/Travelport/pay_success_msg"); // 결제가 완료되었습니다.
-		setPostfunc(POST_PLAY, KICC_ProcessMultiPayments, 5, 0);
-		return send_guide(NODTMF);
-	}
 
-	case 5:
-	{
-		// 승인 완료 안내 재생 후 다음 주문으로 이동
-		eprintf("[승인완료] 주문번호:%s 승인 완료 안내 재생 완료", 
-				nCurrentIdx < pScenario->m_MultiOrders.nOrderCount ? 
-				pScenario->m_MultiOrders.orders[nCurrentIdx].ORDER_NO : 
-				pScenario->m_CardResInfo.ORDER_NO);
-		
-		// 다음 주문으로 이동
+		eprintf("[승인완료] 주문번호:%s 승인 완료 (개별 멘트 생략, 최종 요약에서 안내)", szCurrentOrderNo3);
+
+		// 다음 주문으로 바로 이동 (개별 멘트 재생 생략)
 		pScenario->m_nCurrentOrderIdx++;
 		return KICC_ProcessMultiPayments(1);
 	}
+
+	// [MODIFIED] state 5 제거 - state 4에서 바로 다음 주문으로 이동하므로 불필요
+	// 기존 state 5 코드는 state 4에 통합됨
 	}
 
 	return 0;
@@ -1428,7 +1430,7 @@ int KICC_CardPw(int state)
 		strncpy(pScenario->m_CardInfo.Password, (*lpmt)->dtmfs, sizeof(pScenario->m_CardInfo.Password) - 1);
 		info_printf(localCh, "KICC_CardPw [%d]  비밀번호 입력부>결제 연동 부", state);
 		eprintf("KICC_CardPw[%d]  비밀번호 입력부>결제 연동 부", state);
-		
+
 		// [다중 주문 지원] 다중 주문 모드인지 확인
 		if (pScenario->m_bMultiOrderMode && pScenario->m_MultiOrders.nOrderCount > 1) {
 			// 다중 주문 처리 모드
@@ -1436,10 +1438,19 @@ int KICC_CardPw(int state)
 			return KICC_ProcessMultiPayments(0);
 		}
 		else {
-			// 단일 주문 처리 모드 (기존 방식)
-			setPostfunc(POST_NET, KICC_payARS, 0, 0);
-			return KiccPaymemt_host(90);
+			// [MODIFIED] 단일 주문 처리 모드 - 대기 멘트 재생 후 승인 요청
+			// "결제 요청 중입니다. 잠시만 기다려 주시기 바랍니다."
+			set_guide(VOC_WAVE_ID, "ment/Travelport/pay_request_wait");
+			setPostfunc(POST_PLAY, KICC_CardPw, 2, 0);
+			return send_guide(NODTMF);
 		}
+	case 2:
+	{
+		// [NEW] 대기 멘트 재생 완료 후 단일 주문 승인 요청
+		eprintf("KICC_CardPw[%d] 대기 멘트 재생 완료, 승인 요청 시작", state);
+		setPostfunc(POST_NET, KICC_payARS, 0, 0);
+		return KiccPaymemt_host(90);
+	}
 	default:
 		info_printf(localCh, "KICC_CardPw [%d]  비밀번호 입력부>시나리오 아이디 오류", state);
 		eprintf("KICC_CardPw[%d]  비밀번호 입력부>시나리오 아이디 오류", state);
