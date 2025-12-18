@@ -497,6 +497,26 @@ unsigned int __stdcall KiccArsPayProcess(void *data)
 		memset(szMallid, 0x00, sizeof(szMallid));
 		memcpy(szMallid, pScenario->m_szterminal_id, sizeof(szMallid) - 1);
 	}
+
+	// ========================================
+	// [TEST CODE] 마지막 주문 실패 테스트
+	// 테스트 완료 후 이 블록 전체를 삭제하세요
+	// ========================================
+#define TEST_LAST_ORDER_FAIL  // 이 줄을 주석 처리하면 테스트 비활성화
+#ifdef TEST_LAST_ORDER_FAIL
+	if (pScenario->m_bMultiOrderMode && pScenario->m_MultiOrders.nOrderCount > 1) {
+		// 마지막 주문인지 확인 (m_nCurrentOrderIdx는 0부터 시작)
+		if (pScenario->m_nCurrentOrderIdx == pScenario->m_MultiOrders.nOrderCount - 1) {
+			eprintf("[TEST] 마지막 주문 실패 테스트 활성화: 가맹점ID를 Txxxxxx로 변경 (원래값: %s)", szMallid);
+			memset(szMallid, 0x00, sizeof(szMallid));
+			strncpy(szMallid, "Txxxxxx", sizeof(szMallid) - 1);
+		}
+	}
+#endif
+	// ========================================
+	// [END TEST CODE]
+	// ========================================
+
 	GetPrivateProfileString("KICCPAY", "KICC__CERT_FILE", KICC__CERT_FILE, CertFile, sizeof(CertFile), PARAINI);
 	GetPrivateProfileString("KICCPAY", "KICC_LOG", KICC_LOG, LogDir, sizeof(LogDir), PARAINI);
 

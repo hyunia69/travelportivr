@@ -1,0 +1,85 @@
+USE [arspg_web]
+GO
+/****** Object:  StoredProcedure [dbo].[sp_getKiccMultiOrderInfoHour]    Script Date: 2025-12-18 ******/
+/****** 유효기간: 주문 등록 후 1시간 이내 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[sp_getKiccMultiOrderInfoHour]
+    @PHONE_NO VARCHAR(32),
+    @DNIS VARCHAR(12)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    -- 변수 선언: 추출할 AUTH_NO 저장용
+    DECLARE @AUTH_NO VARCHAR(12);
+
+    -- [1단계] PHONE_NO로 가장 최근 주문 1건 조회하여 AUTH_NO 추출
+    -- 유효기간: 주문 등록 후 1시간 이내
+    SELECT TOP 1
+        @AUTH_NO = A.AUTH_NO  -- AUTH_NO 컬럼에서 인증번호 추출
+    FROM KICC_SHOP_ORDER A
+    INNER JOIN dbo.COMMON_DNIS_MID B
+        ON A.terminal_id = B.SHOP_ID
+    WHERE
+        A.reg_date >= DATEADD(HOUR, -1, GETDATE()) AND  -- 1시간 이내
+        B.ARS_DNIS = @DNIS AND
+        A.payment_code = '0' AND
+        A.phone_no = @PHONE_NO
+    ORDER BY A.reg_date DESC;
+
+    -- AUTH_NO가 없으면 빈 결과 반환
+    IF @AUTH_NO IS NULL
+    BEGIN
+        SELECT TOP 0
+            A.order_no,
+            A.terminal_id,
+            A.terminal_pw,
+            A.terminal_nm,
+            A.cust_nm,
+            A.good_nm,
+            A.amount,
+            A.phone_no,
+            B.SHOP_PW,
+            A.ADMIN_ID,
+            A.AUTH_NO,
+            A.RESERVED_3,
+            A.RESERVED_4,
+            A.RESERVED_5
+        FROM KICC_SHOP_ORDER A
+        INNER JOIN dbo.COMMON_DNIS_MID B
+            ON A.terminal_id = B.SHOP_ID;
+        RETURN;
+    END
+
+    -- [2단계] 추출된 AUTH_NO와 PHONE_NO가 모두 일치하는 모든 주문 조회
+    -- 유효기간: 주문 등록 후 1시간 이내
+    SELECT
+        A.order_no,
+        A.terminal_id,
+        A.terminal_pw,
+        A.terminal_nm,
+        A.cust_nm,
+        A.good_nm,
+        A.amount,
+        A.phone_no,
+        B.SHOP_PW,
+        A.ADMIN_ID,
+        A.AUTH_NO,
+        A.RESERVED_3,
+        A.RESERVED_4,
+        A.RESERVED_5
+    FROM KICC_SHOP_ORDER A
+    INNER JOIN dbo.COMMON_DNIS_MID B
+        ON A.terminal_id = B.SHOP_ID
+    WHERE
+        A.reg_date >= DATEADD(HOUR, -1, GETDATE()) AND  -- 1시간 이내
+        B.ARS_DNIS = @DNIS AND
+        A.payment_code = '0' AND
+        A.phone_no = @PHONE_NO AND
+        A.AUTH_NO = @AUTH_NO  -- 추출된 AUTH_NO로 필터링
+    ORDER BY A.reg_date DESC;
+
+END

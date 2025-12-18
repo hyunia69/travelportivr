@@ -849,6 +849,70 @@ int CADODB::sp_getKiccMultiOrderInfo(CString szDnis, CString szPhoneNo)
 	}
 }
 
+// [다중 주문 지원 - 1시간 유효기간 버전]
+int CADODB::sp_getKiccMultiOrderInfoHour(CString szDnis, CString szPhoneNo)
+{
+	if (ISOpen())
+	{
+		_ParameterPtr pParam;
+		_CommandPtr& cmd = m_CMD;
+
+		try{
+			cmd.CreateInstance("ADODB.Command");
+			cmd->CommandText = "dbo.sp_getKiccMultiOrderInfoHour";  // 1시간 유효기간 SP
+			cmd->CommandType = adCmdStoredProc;
+
+			pParam.CreateInstance("ADODB.Parameter");
+			pParam->Name = L"@PHONE_NO";
+			pParam->Type = adVarChar;
+			pParam->Size = 32;
+			pParam->Direction = adParamInput;
+			cmd->Parameters->Append(pParam);
+			cmd->Parameters->Item[L"@PHONE_NO"]->Value = _variant_t(szPhoneNo.GetBuffer(pParam->Size));
+
+			pParam.CreateInstance("ADODB.Parameter");
+			pParam->Name = L"@DNIS";
+			pParam->Type = adVarChar;
+			pParam->Size = 12;
+			pParam->Direction = adParamInput;
+			cmd->Parameters->Append(pParam);
+			cmd->Parameters->Item[L"@DNIS"]->Value = _variant_t(szDnis.GetBuffer(pParam->Size));
+
+			cmd->ActiveConnection = m_CONN;
+			cmd->Execute(NULL, NULL, adCmdStoredProc);
+		}
+		catch (_com_error e)
+		{
+			PrintProviderError();
+			PrintComError(e);
+			return FALSE;
+		}
+		m_RS.CreateInstance(__uuidof(Recordset));
+		m_RS->PutRefSource(cmd);
+
+		_variant_t vNull;
+		vNull.vt = VT_ERROR;
+		vNull.scode = DISP_E_PARAMNOTFOUND;
+		m_RS->CursorLocation = adUseClient;
+
+		try{
+			m_RS->Open(vNull, vNull, adOpenStatic, adLockOptimistic, adCmdStoredProc);
+		}
+		catch (_com_error e)
+		{
+			PrintProviderError();
+			PrintComError(e);
+			return FALSE;
+		}
+
+		return TRUE;
+	}
+	else
+	{
+		return FALSE;
+	}
+}
+
 BOOL CADODB::FetchMultiOrderResults(MultiOrderInfo* pMultiOrders)
 {
 	if (!pMultiOrders || !m_RS || m_RS->adoEOF) return FALSE;
@@ -1789,8 +1853,10 @@ unsigned int __stdcall getMultiOrderInfoProc(void* arg)
 	CString szDnis(pScenario->szDnis);
 	CString szPhoneNo(pScenario->m_szInputTel);
 
-	if (!pScenario->m_AdoDb->sp_getKiccMultiOrderInfo(szDnis, szPhoneNo)) {
-		eprintf("다중 주문 조회 실패");
+	// [2025-12-18] sp_getKiccMultiOrderInfoHour 사용 (유효기간: 1시간)
+	// 7일 유효기간 사용 시: sp_getKiccMultiOrderInfo(szDnis, szPhoneNo)
+	if (!pScenario->m_AdoDb->sp_getKiccMultiOrderInfoHour(szDnis, szPhoneNo)) {
+		eprintf("다중 주문 조회 실패 (1시간 유효기간)");
 		pScenario->m_DBAccess = -1;
 		pScenario->m_AdoDb->ConClose();
 		(*port)[ch].ppftbl[POST_NET].postcode = HI_COMM;

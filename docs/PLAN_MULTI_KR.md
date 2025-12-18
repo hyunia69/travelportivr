@@ -206,6 +206,106 @@ END
 - 기존 `sp_getKiccOrderInfoByTel2`와 동일한 테이블 구조 및 조인 사용
 - AUTH_NO 컬럼을 통해 동일 인증번호를 가진 여러 주문 조회
 
+#### 2.1.1 1시간 유효기간 버전 (sp_getKiccMultiOrderInfoHour)
+
+**목적**: 주문 유효기간을 7일에서 **1시간**으로 단축한 버전
+
+**차이점**:
+| 구분 | sp_getKiccMultiOrderInfo | sp_getKiccMultiOrderInfoHour |
+|------|--------------------------|------------------------------|
+| 유효기간 | 7일 | 1시간 |
+| 조건문 | `DATEDIFF(dd, ...) <= 7` | `DATEADD(HOUR, -1, GETDATE())` |
+| 용도 | 일반 결제 | 즉시 결제가 필요한 경우 |
+
+**SQL 구현 (CREATE)**:
+```sql
+CREATE PROCEDURE dbo.sp_getKiccMultiOrderInfoHour
+    @PHONE_NO VARCHAR(32),
+    @DNIS VARCHAR(12)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    -- 변수 선언: 추출할 AUTH_NO 저장용
+    DECLARE @AUTH_NO VARCHAR(12);
+
+    -- [1단계] PHONE_NO로 가장 최근 주문 1건 조회하여 AUTH_NO 추출
+    -- 유효기간: 주문 등록 후 1시간 이내
+    SELECT TOP 1
+        @AUTH_NO = A.AUTH_NO
+    FROM KICC_SHOP_ORDER A
+    INNER JOIN dbo.COMMON_DNIS_MID B
+        ON A.terminal_id = B.SHOP_ID
+    WHERE
+        A.reg_date >= DATEADD(HOUR, -1, GETDATE()) AND  -- 1시간 이내
+        B.ARS_DNIS = @DNIS AND
+        A.payment_code = '0' AND
+        A.phone_no = @PHONE_NO
+    ORDER BY A.reg_date DESC;
+
+    -- AUTH_NO가 없으면 빈 결과 반환
+    IF @AUTH_NO IS NULL
+    BEGIN
+        SELECT TOP 0
+            A.order_no,
+            A.terminal_id,
+            A.terminal_pw,
+            A.terminal_nm,
+            A.cust_nm,
+            A.good_nm,
+            A.amount,
+            A.phone_no,
+            B.SHOP_PW,
+            A.ADMIN_ID,
+            A.AUTH_NO,
+            A.RESERVED_3,
+            A.RESERVED_4,
+            A.RESERVED_5
+        FROM KICC_SHOP_ORDER A
+        INNER JOIN dbo.COMMON_DNIS_MID B
+            ON A.terminal_id = B.SHOP_ID;
+        RETURN;
+    END
+
+    -- [2단계] 추출된 AUTH_NO와 PHONE_NO가 모두 일치하는 모든 주문 조회
+    -- 유효기간: 주문 등록 후 1시간 이내
+    SELECT
+        A.order_no,
+        A.terminal_id,
+        A.terminal_pw,
+        A.terminal_nm,
+        A.cust_nm,
+        A.good_nm,
+        A.amount,
+        A.phone_no,
+        B.SHOP_PW,
+        A.ADMIN_ID,
+        A.AUTH_NO,
+        A.RESERVED_3,
+        A.RESERVED_4,
+        A.RESERVED_5
+    FROM KICC_SHOP_ORDER A
+    INNER JOIN dbo.COMMON_DNIS_MID B
+        ON A.terminal_id = B.SHOP_ID
+    WHERE
+        A.reg_date >= DATEADD(HOUR, -1, GETDATE()) AND  -- 1시간 이내
+        B.ARS_DNIS = @DNIS AND
+        A.payment_code = '0' AND
+        A.phone_no = @PHONE_NO AND
+        A.AUTH_NO = @AUTH_NO
+    ORDER BY A.reg_date DESC;
+
+END
+```
+
+**C++ 코드에서 사용 시 변경 사항**:
+```cpp
+// ADODB.cpp - sp_getKiccMultiOrderInfoHour 호출 시
+cmd->CommandText = "dbo.sp_getKiccMultiOrderInfoHour";  // SP 이름 변경
+```
+
+**스크립트 파일**: `docs/sp_getKiccMultiOrderInfoHour.txt`
+
 #### 2.2 ADO 데이터베이스 접근 메서드
 **위치**: `ADODB.h` 및 `ADODB.cpp`
 

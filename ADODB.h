@@ -68,7 +68,8 @@ public:
 	int      sp_getKiccSMSOrderInfoByTel2(CString szDnis, CString szAuthNo);
 
 	// [다중 주문 지원 - 신규]
-	int      sp_getKiccMultiOrderInfo(CString szDnis, CString szPhoneNo);
+	int      sp_getKiccMultiOrderInfo(CString szDnis, CString szPhoneNo);      // 유효기간: 7일
+	int      sp_getKiccMultiOrderInfoHour(CString szDnis, CString szPhoneNo);  // 유효기간: 1시간
 	BOOL     FetchMultiOrderResults(MultiOrderInfo* pMultiOrders);
 
 	BOOL     setPayLog(Card_ResInfo ag_Card_ResInfo);
