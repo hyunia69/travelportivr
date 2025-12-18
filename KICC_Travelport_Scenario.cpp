@@ -1440,6 +1440,39 @@ int KICC_CardPw(int state)
 		else {
 			// [MODIFIED] 단일 주문 처리 모드 - 대기 멘트 재생 후 승인 요청
 			// "결제 요청 중입니다. 잠시만 기다려 주시기 바랍니다."
+
+			// [FIX] 단건일 때도 m_MultiOrders.orders[0]의 정보를 복사
+			if (pScenario->m_bMultiOrderMode && pScenario->m_MultiOrders.nOrderCount == 1) {
+				memcpy(&pScenario->m_CardResInfo,
+					   &pScenario->m_MultiOrders.orders[0],
+					   sizeof(Card_ResInfo));
+
+				memset(pScenario->m_szterminal_id, 0x00, sizeof(pScenario->m_szterminal_id));
+				strncpy(pScenario->m_szterminal_id,
+						pScenario->m_CardResInfo.TERMINAL_ID,
+						sizeof(pScenario->m_szterminal_id) - 1);
+
+				memset(pScenario->m_szorder_no, 0x00, sizeof(pScenario->m_szorder_no));
+				strncpy(pScenario->m_szorder_no,
+						pScenario->m_CardResInfo.ORDER_NO,
+						sizeof(pScenario->m_szorder_no) - 1);
+
+				memset(pScenario->m_szgood_nm, 0x00, sizeof(pScenario->m_szgood_nm));
+				strncpy(pScenario->m_szgood_nm,
+						pScenario->m_CardResInfo.GOOD_NM,
+						sizeof(pScenario->m_szgood_nm) - 1);
+
+				memset(pScenario->m_szcust_nm, 0x00, sizeof(pScenario->m_szcust_nm));
+				strncpy(pScenario->m_szcust_nm,
+						pScenario->m_CardResInfo.CUST_NM,
+						sizeof(pScenario->m_szcust_nm) - 1);
+
+				pScenario->m_namount = pScenario->m_CardResInfo.TOTAMOUNT;
+
+				eprintf("[단건주문정보설정] m_szterminal_id:%s, m_szorder_no:%s, m_namount:%d",
+						pScenario->m_szterminal_id, pScenario->m_szorder_no, pScenario->m_namount);
+			}
+
 			set_guide(VOC_WAVE_ID, "ment/Travelport/pay_request_wait");
 			setPostfunc(POST_PLAY, KICC_CardPw, 2, 0);
 			return send_guide(NODTMF);
