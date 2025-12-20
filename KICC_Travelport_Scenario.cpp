@@ -2592,14 +2592,13 @@ int KICC_ArsScenarioStart(/* [in] */int state)
 		setPostfunc(POST_PLAY, KICC_ArsScenarioStart, 11, 0);
 		return send_guide(NODTMF);
 
-	// [NEW] 3초 대기
+	// [NEW] 3초 대기 - POST_TIME 타이머 사용 (음성 파일 불필요)
 	case 11:
-		new_guide();
 		info_printf(localCh, "KICC_ArsScenarioStart [%d] 3초 대기 중...", state);
-		eprintf("KICC_ArsScenarioStart [%d] 3초 대기 (삼자통화/호전환 대기)", state);
-		set_guide(VOC_WAVE_ID, "ment\\Travelport\\wait_3sec");  // 3초 무음 또는 대기음
-		setPostfunc(POST_PLAY, KICC_ArsScenarioStart, 12, 0);
-		return send_guide(NODTMF);
+		eprintf("KICC_ArsScenarioStart [%d] 3초 대기 (삼자통화/호전환 대기) - POST_TIME 사용", state);
+		// POST_TIME: 3초 후 Case 12로 진행 (음성 파일 없이 타이머 대기)
+		setPostfunc(POST_TIME, KICC_ArsScenarioStart, 12, 3);
+		return 0;  // 타이머 대기 상태로 전환
 
 	// [NEW] 시스템 인사말 후 결제 안내 진행
 	case 12:
