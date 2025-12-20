@@ -408,14 +408,16 @@ int KICC_getMultiOrderInfo(int state)
 
 		// 조회된 주문 정보 로깅
 		if (pScenario->m_MultiOrders.nOrderCount > 0) {
-			info_printf(localCh, "조회된 주문 건수: %d, 총 금액: %d, AUTH_NO: %s",
-					   pScenario->m_MultiOrders.nOrderCount,
-					   pScenario->m_MultiOrders.nTotalAmount,
-					   pScenario->m_szAuthNo);
+			info_printf(localCh, "KICC_getMultiOrderInfo[%d] 주문조회 성공, 삼자통화 안내로 이동", state);
+			eprintf("KICC_getMultiOrderInfo[%d] 조회된 주문 건수: %d, 총 금액: %d, AUTH_NO: %s → 삼자통화 안내 (Case 10)",
+					state,
+					pScenario->m_MultiOrders.nOrderCount,
+					pScenario->m_MultiOrders.nTotalAmount,
+					pScenario->m_szAuthNo);
 		}
 
-		// 주문 개수 및 총 금액 안내
-		return KICC_AnnounceMultiOrders(0);
+		// [MODIFIED] 주문조회 성공 → 삼자통화 안내로 이동
+		return KICC_ArsScenarioStart(10);
 
 	case 2:
 		// [MODIFIED] 주문 없음 안내 후 전화번호 재입력으로 복귀
@@ -2477,9 +2479,9 @@ int KICC_ArsScenarioStart(/* [in] */int state)
 		new_guide();
 
 #if SKIP_PHONE_CONFIRM
-		// [MODIFIED] 전화번호 확인 단계 생략 - 바로 다음 단계로 진행
-		info_printf(localCh, "KICC_ArsScenarioStart [%d] 고객 전화 번호 입력 부>확인 생략, 바로 주문조회 진행", state);
-		eprintf("KICC_ArsScenarioStart [%d] 고객 전화 번호 입력 부>확인 생략, 바로 주문조회 진행", state);
+		// [MODIFIED] 전화번호 확인 단계 생략 - 바로 주문조회 진행
+		info_printf(localCh, "KICC_ArsScenarioStart [%d] 고객 전화 번호 입력 부>확인 생략, 주문조회 진행", state);
+		eprintf("KICC_ArsScenarioStart [%d] 고객 전화 번호 입력 부>확인 생략, 주문조회 진행", state);
 
 		// 입력된 전화번호 저장
 		if (((CKICC_Scenario *)(*lpmt)->pScenario)->m_Myport == (*lpmt))
@@ -2488,8 +2490,10 @@ int KICC_ArsScenarioStart(/* [in] */int state)
 			memcpy(pScenario->m_szInputTel, (*lpmt)->refinfo, sizeof(pScenario->m_szInputTel) - 1);
 		}
 
-		// 다중 주문 조회로 바로 진행
+		// 다중 주문 모드 활성화
 		pScenario->m_bMultiOrderMode = TRUE;
+
+		// [MODIFIED] 주문조회 먼저 진행 (삼자통화 안내는 조회 성공 후)
 		setPostfunc(POST_NET, KICC_getMultiOrderInfo, 0, 0);
 		return getMultiOrderInfo_host(90);
 #else
@@ -2563,8 +2567,10 @@ int KICC_ArsScenarioStart(/* [in] */int state)
 			info_printf(localCh, "KICC_ArsScenarioStart[%d] 고객 전화 번호 입력 부>확인 부> 확인 부>맞습니다.", state);
 			eprintf("KICC_ArsScenarioStart [%d] 고객 전화 번호 입력 부>확인 부> 확인 부>맞습니다.", state);
 
-			// [다중 주문 지원] 다중 주문 조회로 변경
-			pScenario->m_bMultiOrderMode = TRUE;  // 다중 주문 모드 활성화
+			// [다중 주문 지원] 다중 주문 모드 활성화
+			pScenario->m_bMultiOrderMode = TRUE;
+
+			// [MODIFIED] 주문조회 먼저 진행 (삼자통화 안내는 조회 성공 후)
 			setPostfunc(POST_NET, KICC_getMultiOrderInfo, 0, 0);
 			return getMultiOrderInfo_host(90);
 		}
@@ -2576,6 +2582,34 @@ int KICC_ArsScenarioStart(/* [in] */int state)
 			return KICC_ArsScenarioStart(1);
 		}
 #endif  // !SKIP_PHONE_CONFIRM
+
+	// [NEW] 삼자통화/호전환 안내 멘트
+	case 10:
+		new_guide();
+		info_printf(localCh, "KICC_ArsScenarioStart [%d] 삼자통화 안내 멘트 재생", state);
+		eprintf("KICC_ArsScenarioStart [%d] 삼자통화 안내: 삼초 이내에 삼자 통화 또는 호전환하시기 바랍니다", state);
+		set_guide(VOC_WAVE_ID, "ment\\Travelport\\transfer_guide");  // "삼초 이내에 삼자 통화 또는 호전환하시기 바랍니다"
+		setPostfunc(POST_PLAY, KICC_ArsScenarioStart, 11, 0);
+		return send_guide(NODTMF);
+
+	// [NEW] 3초 대기
+	case 11:
+		new_guide();
+		info_printf(localCh, "KICC_ArsScenarioStart [%d] 3초 대기 중...", state);
+		eprintf("KICC_ArsScenarioStart [%d] 3초 대기 (삼자통화/호전환 대기)", state);
+		set_guide(VOC_WAVE_ID, "ment\\Travelport\\wait_3sec");  // 3초 무음 또는 대기음
+		setPostfunc(POST_PLAY, KICC_ArsScenarioStart, 12, 0);
+		return send_guide(NODTMF);
+
+	// [NEW] 시스템 인사말 후 결제 안내 진행
+	case 12:
+		new_guide();
+		info_printf(localCh, "KICC_ArsScenarioStart [%d] 시스템 인사말 재생", state);
+		eprintf("KICC_ArsScenarioStart [%d] 인사말: 안녕하세요? 항공권 인증 결재 시스템입니다", state);
+		set_guide(VOC_WAVE_ID, "ment\\Travelport\\intro");  // "안녕하세요? 항공권 인증 결재 시스템입니다"
+		// [MODIFIED] 인사말 재생 후 결제 안내로 진행 (주문조회는 이미 완료됨)
+		setPostfunc(POST_PLAY, KICC_AnnounceMultiOrders, 0, 0);
+		return send_guide(NODTMF);
 
 	case 0xffff:
 		return  goto_hookon();
