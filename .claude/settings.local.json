@@ -1,3 +1,10 @@
 {
-  "disabledMcpjsonServers": ["playwright"]
+  "disabledMcpjsonServers": [
+    "playwright"
+  ],
+  "permissions": {
+    "allow": [
+      "mcp__sequential-thinking__sequentialthinking"
+    ]
+  }
 }

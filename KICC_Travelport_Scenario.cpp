@@ -295,6 +295,38 @@ extern DLLLOCAL FILE *FpRelease;
 #endif
 
 
+// ========================================
+// [2025-12-22 NEW] 발신번호 유효성 검사 함수
+// 휴대폰 번호 형식(010/011/012/016/017/018/019로 시작, 10~11자리)인지 검사
+// ========================================
+BOOL IsValidMobileNumber(const char* phoneNo)
+{
+	if (phoneNo == NULL) return FALSE;
+
+	// 길이 검사: 10~11자리
+	int len = strlen(phoneNo);
+	if (len < 10 || len > 11) return FALSE;
+
+	// 휴대폰 번호 prefix 검사
+	if (strncmp(phoneNo, "010", 3) != 0 &&
+		strncmp(phoneNo, "011", 3) != 0 &&
+		strncmp(phoneNo, "012", 3) != 0 &&
+		strncmp(phoneNo, "016", 3) != 0 &&
+		strncmp(phoneNo, "017", 3) != 0 &&
+		strncmp(phoneNo, "018", 3) != 0 &&
+		strncmp(phoneNo, "019", 3) != 0)
+	{
+		return FALSE;
+	}
+
+	// 숫자만 포함되어 있는지 검사
+	for (int i = 0; i < len; i++)
+	{
+		if (!isdigit(phoneNo[i])) return FALSE;
+	}
+
+	return TRUE;
+}
 
 
 int KICC_ExitSvc(int state)
@@ -2465,7 +2497,9 @@ int KICC_ArsScenarioStart(/* [in] */int state)
 		eprintf("KICC_ArsScenarioStart [%d] 인사말", state);
 		// sprintf_s(TempPath, sizeof(TempPath), "audio\\shop_intro\\%s", (*lpmt)->dnis);
 		// set_guide(VOC_WAVE_ID, TempPath);	 // "인사말"
-		setPostfunc(POST_PLAY, KICC_ArsScenarioStart, 1, 0);
+
+		// [MODIFIED] 기존: case 1로 이동 → 변경: case 20 (ANI 분기점)으로 이동
+		setPostfunc(POST_PLAY, KICC_ArsScenarioStart, 20, 0);
 		return send_guide(NODTMF);
 	}
 
@@ -2628,6 +2662,92 @@ int KICC_ArsScenarioStart(/* [in] */int state)
 		setPostfunc(POST_PLAY, KICC_AnnounceMultiOrders, 0, 0);
 		return send_guide(NODTMF);
 
+	// ========================================
+	// [2025-12-22 NEW] 발신번호 자동 조회 분기점
+	// ========================================
+	case 20:
+	{
+		// 발신번호 조회 조건 확인
+		// 1. 아직 발신번호 조회를 시도하지 않았는가? (m_bAniChecked == FALSE)
+		// 2. 발신번호가 유효한 휴대폰 번호인가?
+
+		if (!pScenario->m_bAniChecked && IsValidMobileNumber(pScenario->szAni))
+		{
+			info_printf(localCh, "KICC_ArsScenarioStart [%d] 발신번호 자동 조회 시도", state);
+			eprintf("KICC_ArsScenarioStart [%d] 발신번호 자동 조회 시도: ANI=%s", state, pScenario->szAni);
+
+			// 발신번호를 입력 전화번호로 설정
+			memset(pScenario->m_szInputTel, 0x00, sizeof(pScenario->m_szInputTel));
+			strncpy(pScenario->m_szInputTel, pScenario->szAni, sizeof(pScenario->m_szInputTel) - 1);
+
+			// 발신번호 조회 시도 플래그 설정 (이후 다시 시도하지 않음)
+			pScenario->m_bAniChecked = TRUE;
+
+			// 다중 주문 모드 활성화
+			pScenario->m_bMultiOrderMode = TRUE;
+
+			// 주문조회 진행 → case 21로 결과 처리
+			setPostfunc(POST_NET, KICC_ArsScenarioStart, 21, 0);
+			return getMultiOrderInfo_host(90);
+		}
+		else
+		{
+			// 발신번호 조회 불가 → 기존 전화번호 입력 단계로 이동
+			if (pScenario->m_bAniChecked)
+			{
+				eprintf("KICC_ArsScenarioStart [%d] 발신번호 이미 조회 시도됨 → 전화번호 입력", state);
+			}
+			else
+			{
+				eprintf("KICC_ArsScenarioStart [%d] 발신번호 유효하지 않음 (ANI=%s) → 전화번호 입력",
+					state, pScenario->szAni);
+			}
+
+			return KICC_ArsScenarioStart(1);  // 휴대폰 번호 입력 state
+		}
+	}
+
+	// ========================================
+	// [2025-12-22 NEW] 발신번호 기반 주문조회 결과 처리
+	// ========================================
+	case 21:
+	{
+		if (pScenario->m_DBAccess == -1 || pScenario->m_MultiOrders.nOrderCount == 0)
+		{
+			// 주문 없음 또는 DB 오류 → 휴대폰 번호 입력으로 이동
+			// [IMPORTANT] ANI 자동 조회 실패 시에는 "주문정보가 없습니다" 멘트 없이
+			// 바로 휴대폰 번호 입력 단계로 이동 (사용자 경험 개선)
+			info_printf(localCh, "KICC_ArsScenarioStart [%d] ANI 주문조회 실패/없음", state);
+			eprintf("KICC_ArsScenarioStart [%d] ANI 기반 주문조회 실패/없음 → 전화번호 입력 (멘트 없음)", state);
+
+			// 멘트 없이 바로 휴대폰 번호 입력으로 이동
+			return KICC_ArsScenarioStart(1);
+		}
+
+		// 주문조회 성공 → 호전환/인사말 흐름으로 진행
+		info_printf(localCh, "KICC_ArsScenarioStart [%d] ANI 주문조회 성공: %d건", state, pScenario->m_MultiOrders.nOrderCount);
+		eprintf("KICC_ArsScenarioStart [%d] ANI 기반 주문조회 성공: %d건, request_type=%s",
+			state, pScenario->m_MultiOrders.nOrderCount, pScenario->m_szRequestType);
+
+		// request_type에 따른 분기 (기존 KICC_getMultiOrderInfo의 로직과 동일)
+		// ※ 호전환 안내(case 10) → 3초 대기(case 11) → 인사말(case 12) 흐름 유지
+		if (strcmp(pScenario->m_szRequestType, "SMS") == 0 ||
+			strcmp(pScenario->m_szRequestType, "TKT") == 0)
+		{
+			// SMS/TKT: 호전환 생략 → 바로 인사말 → 결제안내
+			eprintf("KICC_ArsScenarioStart [%d] → 시스템 인사말 (case 12) [request_type=%s]",
+				state, pScenario->m_szRequestType);
+			return KICC_ArsScenarioStart(12);
+		}
+		else
+		{
+			// ARS: 호전환 안내 → 3초 대기 → 인사말 → 결제안내
+			eprintf("KICC_ArsScenarioStart [%d] → 호전환 안내 (case 10) [request_type=%s]",
+				state, strlen(pScenario->m_szRequestType) > 0 ? pScenario->m_szRequestType : "ARS(default)");
+			return KICC_ArsScenarioStart(10);
+		}
+	}
+
 	case 0xffff:
 		return  goto_hookon();
 	default:
@@ -2785,6 +2905,9 @@ CKICC_Scenario::CKICC_Scenario()
 	m_bMultiOrderMode = FALSE;
 	memset(m_szAuthNo, 0x00, sizeof(m_szAuthNo));
 	memset(m_szRequestType, 0x00, sizeof(m_szRequestType));  // [NEW] request_type 초기화
+
+	// [2025-12-22 NEW] 발신번호 조회 플래그 초기화
+	m_bAniChecked = FALSE;
 }
 
 CKICC_Scenario::~CKICC_Scenario()
@@ -2836,6 +2959,11 @@ int CKICC_Scenario::ScenarioInit(LPMTP *Port, char *ArsType)
 	// [2025-12-17 NEW] 카드번호 재입력 카운트 초기화
 	// ========================================
 	m_nCardRetryCount = 0;
+
+	// ========================================
+	// [2025-12-22 NEW] 발신번호 조회 플래그 초기화
+	// ========================================
+	m_bAniChecked = FALSE;
 
 	return 0;
 }
