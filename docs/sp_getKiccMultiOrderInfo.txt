@@ -45,7 +45,8 @@ BEGIN
             A.AUTH_NO,
             A.RESERVED_3,
             A.RESERVED_4,
-            A.RESERVED_5
+            A.RESERVED_5,
+            A.request_type   -- [NEW] ARS/SMS/TKT 구분
         FROM KICC_SHOP_ORDER A
         INNER JOIN dbo.COMMON_DNIS_MID B
             ON A.terminal_id = B.SHOP_ID;
@@ -67,7 +68,8 @@ BEGIN
         A.AUTH_NO,
         A.RESERVED_3,
         A.RESERVED_4,
-        A.RESERVED_5
+        A.RESERVED_5,
+        A.request_type   -- [NEW] ARS/SMS/TKT 구분
     FROM KICC_SHOP_ORDER A
     INNER JOIN dbo.COMMON_DNIS_MID B
         ON A.terminal_id = B.SHOP_ID

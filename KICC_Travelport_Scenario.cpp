@@ -408,16 +408,34 @@ int KICC_getMultiOrderInfo(int state)
 
 		// 조회된 주문 정보 로깅
 		if (pScenario->m_MultiOrders.nOrderCount > 0) {
-			info_printf(localCh, "KICC_getMultiOrderInfo[%d] 주문조회 성공, 삼자통화 안내로 이동", state);
-			eprintf("KICC_getMultiOrderInfo[%d] 조회된 주문 건수: %d, 총 금액: %d, AUTH_NO: %s → 삼자통화 안내 (Case 10)",
+			info_printf(localCh, "KICC_getMultiOrderInfo[%d] 주문조회 성공 [%s 타입]", state, pScenario->szArsType);
+			eprintf("KICC_getMultiOrderInfo[%d] 조회된 주문 건수: %d, 총 금액: %d, AUTH_NO: %s",
 					state,
 					pScenario->m_MultiOrders.nOrderCount,
 					pScenario->m_MultiOrders.nTotalAmount,
 					pScenario->m_szAuthNo);
 		}
 
-		// [MODIFIED] 주문조회 성공 → 삼자통화 안내로 이동
-		return KICC_ArsScenarioStart(10);
+		// [MODIFIED] 주문조회 성공 - 주문의 request_type에 따른 분기 처리
+		// 디버깅: m_szRequestType 값 확인
+		eprintf("KICC_getMultiOrderInfo[%d] m_szRequestType='%s', len=%d",
+				state, pScenario->m_szRequestType, strlen(pScenario->m_szRequestType));
+
+		// request_type이 "SMS" 또는 "TKT"인 경우에만 호전환 생략
+		// 빈 값이거나 "ARS"이면 호전환 멘트 재생
+		if (strcmp(pScenario->m_szRequestType, "SMS") == 0 || strcmp(pScenario->m_szRequestType, "TKT") == 0)
+		{
+			// SMS/TKT 타입: 바로 인사말 → 결제안내 (삼자통화 안내/대기 생략)
+			eprintf("KICC_getMultiOrderInfo[%d] → 시스템 인사말 (Case 12) [request_type=%s]", state, pScenario->m_szRequestType);
+			return KICC_ArsScenarioStart(12);
+		}
+		else
+		{
+			// ARS 타입 또는 빈값(기본값): 삼자통화 안내 → 3초 대기 → 인사말 → 결제안내
+			eprintf("KICC_getMultiOrderInfo[%d] → 삼자통화 안내 (Case 10) [request_type=%s]", state,
+					strlen(pScenario->m_szRequestType) > 0 ? pScenario->m_szRequestType : "ARS(default)");
+			return KICC_ArsScenarioStart(10);
+		}
 
 	case 2:
 		// [MODIFIED] 주문 없음 안내 후 전화번호 재입력으로 복귀
@@ -2766,6 +2784,7 @@ CKICC_Scenario::CKICC_Scenario()
 	m_nCurrentOrderIdx = 0;
 	m_bMultiOrderMode = FALSE;
 	memset(m_szAuthNo, 0x00, sizeof(m_szAuthNo));
+	memset(m_szRequestType, 0x00, sizeof(m_szRequestType));  // [NEW] request_type 초기화
 }
 
 CKICC_Scenario::~CKICC_Scenario()

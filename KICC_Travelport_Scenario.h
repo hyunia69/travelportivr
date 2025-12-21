@@ -83,6 +83,7 @@ public:
 	int              m_nCurrentOrderIdx;   // 현재 처리중인 주문 인덱스
 	BOOL             m_bMultiOrderMode;    // 플래그: 다중 주문 처리 모드
 	char             m_szAuthNo[12 + 1];   // SP에서 추출된 AUTH_NO 저장용 (로깅/디버깅)
+	char             m_szRequestType[10 + 1]; // [NEW] 첫 주문의 요청 타입 (ARS/SMS/TKT)
 
 	// ========================================
 	// [2025-12-15 NEW] 휴대폰 번호 재시도 카운트

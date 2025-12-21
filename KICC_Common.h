@@ -49,6 +49,9 @@ typedef struct Card_ResInfo
 	char issuer_nm[20 + 1]; //발급사명
 	char uirer_cd[3 + 1]; // 매입사코드
 	char acquirer_nm[20 + 1];//매입사명
+
+	// [NEW] 주문 요청 타입 (ARS/SMS/TKT)
+	char REQUEST_TYPE[10 + 1];  // "ARS", "SMS", "TKT"
 }Card_ResInfo;
 
 

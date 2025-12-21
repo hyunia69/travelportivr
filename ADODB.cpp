@@ -997,12 +997,21 @@ BOOL CADODB::FetchMultiOrderResults(MultiOrderInfo* pMultiOrders)
 			GetRs(_variant_t(L"RESERVED_5"), bt);
 			strncpy(szReserved5, (char*)(_bstr_t)bt, sizeof(szReserved5) - 1);
 
+			// [NEW] request_type: 주문 요청 타입 (ARS/SMS/TKT)
+			bt = "";
+			GetRs(_variant_t(L"request_type"), bt);
+			strncpy(pOrder->REQUEST_TYPE, (char*)(_bstr_t)bt, sizeof(pOrder->REQUEST_TYPE) - 1);
+
 			// 첫 번째 주문의 DB 카드 정보를 시나리오에 저장 (모든 주문이 동일한 카드 정보를 사용)
 			if (nCount == 0 && m_pScenario) {
 				CKICC_Scenario* pScenario = (CKICC_Scenario*)m_pScenario;
-				
+
 				// AUTH_NO 저장
 				strncpy(pScenario->m_szAuthNo, szAuthNo, sizeof(pScenario->m_szAuthNo) - 1);
+
+				// [NEW] request_type 저장 (첫 번째 주문의 타입을 기준으로 함)
+				strncpy(pScenario->m_szRequestType, pOrder->REQUEST_TYPE, sizeof(pScenario->m_szRequestType) - 1);
+				eprintf("[KICC] 다중주문 request_type: %s", pScenario->m_szRequestType);
 				
 				// RESERVED_3: 유효기간 (YYMM, 4자리)
 				strncpy(pScenario->m_szDB_ExpireDate, pOrder->RESERVED_3, sizeof(pScenario->m_szDB_ExpireDate) - 1);
