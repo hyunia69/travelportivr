@@ -348,14 +348,14 @@ int KICC_ExitSvc(int state)
 		new_guide();
 		info_printf(localCh, "KICC_ExitSvc [%d] 종료 서비스...", state);
 		eprintf("KICC_ExitSvc [%d] 종료 서비스", state);
-		set_guide(VOC_WAVE_ID, "ment\\_common\\common_audio\\service_end");	 // "마지막 인사말"
+		set_guide(VOC_WAVE_ID, "ment/Travelport/service_end");	 // "마지막 인사말"
 		setPostfunc(POST_PLAY, KICC_ExitSvc, 0xffff, 0);
 		return send_guide(NODTMF);
 	case 10:
 		new_guide();
 		info_printf(localCh, "KICC_ExitSvc [%d] 종료 서비스...이용방법 확인...", state);
 		eprintf("KICC_ExitSvc [%d] 종료 서비스:이용방법 확인...", state);
-		set_guide(VOC_WAVE_ID, "ment\\_common\\common_audio\\Error_end");	 // "이용방법 확인..."
+		set_guide(VOC_WAVE_ID, "ment/Travelport/Error_end");	 // "이용방법 확인..."
 		setPostfunc(POST_PLAY, KICC_ExitSvc, 0xffff, 0);
 		return send_guide(NODTMF);
 	case 0xffff:
@@ -554,12 +554,12 @@ int KICC_AnnounceMultiOrders(int state)
 			char TTSFile[2048 + 1] = { 0x00, };
 			sprintf(TTSFile, "%s", pScenario->szTTSFile);
 			set_guide(VOC_TTS_ID, TTSFile);
-			set_guide(VOC_WAVE_ID, "ment\\_common\\common_audio\\input_confirm");
+			set_guide(VOC_WAVE_ID, "ment/Travelport/input_confirm");
 			memset(pScenario->szTTSFile, 0x00, sizeof(pScenario->szTTSFile));
 		}
 		else {
 			new_guide();
-			set_guide(VOC_WAVE_ID, "ment\\_common\\common_audio\\input_confirm");
+			set_guide(VOC_WAVE_ID, "ment/Travelport/input_confirm");
 		}
 		
 		setPostfunc(POST_DTMF, KICC_AnnounceMultiOrders, 2, 0);
@@ -1436,7 +1436,7 @@ int KICC_payARS(int state)
 				set_guide(VOC_TTS_ID, TTSFile);
 				memset(pScenario->szTTSFile, 0x00, sizeof(pScenario->szTTSFile));// 플래이 직후 삭제 처리(TTS)
 			}
-			set_guide(VOC_WAVE_ID, "ment/_common/common_audio/pay_fail_msg");// 결제 실패
+			set_guide(VOC_WAVE_ID, "ment/Travelport/pay_fail_msg");// 결제 실패
 			setPostfunc(POST_PLAY, KICC_ExitSvc, 0, 0);
 			return send_guide(NODTMF);
 		}
@@ -1657,7 +1657,7 @@ int KICC_InstallmentCConfrim(int state)
 				set_guide(VOC_TTS_ID, TTSFile);
 				memset(pScenario->szTTSFile, 0x00, sizeof(pScenario->szTTSFile));// 플래이 직후 삭제 처리
 			}
-			set_guide(VOC_WAVE_ID, "ment/_common/common_audio/input_confirm");
+			set_guide(VOC_WAVE_ID, "ment/Travelport/input_confirm");
 			setPostfunc(POST_DTMF, KICC_InstallmentCConfrim, 4, 0);
 			return send_guide(1);
 		case 3:
@@ -1680,7 +1680,7 @@ int KICC_InstallmentCConfrim(int state)
 				set_guide(VOC_TTS_ID, TTSFile);
 				memset(pScenario->szTTSFile, 0x00, sizeof(pScenario->szTTSFile));// 플래이 직후 삭제 처리
 			}
-			set_guide(VOC_WAVE_ID, "ment/_common/common_audio/input_confirm");
+			set_guide(VOC_WAVE_ID, "ment/Travelport/input_confirm");
 			setPostfunc(POST_DTMF, KICC_InstallmentCConfrim, 4, 0);
 			return send_guide(1);
 		case 4:
@@ -1838,7 +1838,7 @@ int KICC_JuminNo(int state)
 			char TTSFile[2048 + 1] = { 0x00, };
 			sprintf(TTSFile, "%s", pScenario->szTTSFile);
 			set_guide(VOC_TTS_ID, TTSFile);	 // "누르신 유효 기간은  XX년 XX월 입니다."
-			set_guide(VOC_WAVE_ID, "ment\\_common\\common_audio\\input_confirm");
+			set_guide(VOC_WAVE_ID, "ment/Travelport/input_confirm");
 			memset(pScenario->szTTSFile, 0x00, sizeof(pScenario->szTTSFile));// 플래이 직후 삭제 처리
 		}
 		setPostfunc(POST_DTMF, KICC_JuminNo, 3, 0);
@@ -2039,7 +2039,7 @@ int KICC_EffecDate(int state)
 				char TTSFile[2048 + 1] = { 0x00, };
 				sprintf(TTSFile, "%s", pScenario->szTTSFile);
 				set_guide(VOC_TTS_ID, TTSFile);	 // "누르신 유효 기간은  XX년 XX월 입니다."
-				set_guide(VOC_WAVE_ID, "ment\\_common\\common_audio\\input_confirm");
+				set_guide(VOC_WAVE_ID, "ment/Travelport/input_confirm");
 				memset(pScenario->szTTSFile, 0x00, sizeof(pScenario->szTTSFile));// 플래이 직후 삭제 처리
 			}
 			setPostfunc(POST_DTMF, KICC_EffecDate, 3, 0);
@@ -2286,7 +2286,7 @@ int KICC_CardInput(int state)
 				char TTSFile[2048 + 1] = { 0x00, };
 				sprintf(TTSFile, "%s", pScenario->szTTSFile);
 				set_guide(VOC_TTS_ID, TTSFile);	 // "누르신 카드번호는 .. 번입니다."
-				set_guide(VOC_WAVE_ID, "ment\\_common\\common_audio\\input_confirm");
+				set_guide(VOC_WAVE_ID, "ment/Travelport/input_confirm");
 				memset(pScenario->szTTSFile, 0x00, sizeof(pScenario->szTTSFile));// 플래이 직후 삭제 처리
 			}
 			setPostfunc(POST_DTMF, KICC_CardInput, 3, 0);
@@ -2430,7 +2430,7 @@ int KICC_getOrderInfo(/* [in] */int state)
 			char TTSFile[2048 + 1] = { 0x00, };
 			sprintf(TTSFile, "%s", pScenario->szTTSFile);
 			set_guide(VOC_TTS_ID, TTSFile);	 // "주문 상품 정보안내"
-			set_guide(VOC_WAVE_ID, "ment\\_common\\common_audio\\input_confirm");
+			set_guide(VOC_WAVE_ID, "ment/Travelport/input_confirm");
 			memset(pScenario->szTTSFile, 0x00, sizeof(pScenario->szTTSFile));// 플래이 직후 삭제 처리
 		}
 		setPostfunc(POST_DTMF, KICC_getOrderInfo, 2, 0);
@@ -2595,7 +2595,7 @@ int KICC_ArsScenarioStart(/* [in] */int state)
 			sprintf(TTSFile, "%s", pScenario->szTTSFile);
 
 			set_guide(VOC_TTS_ID, TTSFile);	 // 주문번호 확일을 위해 주문 번호 재생
-			set_guide(VOC_WAVE_ID, "ment/_common/common_audio/input_confirm");
+			set_guide(VOC_WAVE_ID, "ment/Travelport/input_confirm");
 			memset(pScenario->szTTSFile, 0x00, sizeof(pScenario->szTTSFile));// 플래이 직후 삭제 처리
 		}
 		setPostfunc(POST_DTMF, KICC_ArsScenarioStart, 4, 0);
@@ -2848,7 +2848,7 @@ int KICC_SMSScenarioStart(/* [in] */int state)
 
 			set_guide(VOC_WAVE_ID, "audio/input_sms_msg"); //입력 하신 주문 번호는 
 			set_guide(VOC_TTS_ID, TTSFile);	 // 주문번호 확일을 위해 주문 번호 재생
-			set_guide(VOC_WAVE_ID, "ment/_common/common_audio/input_confirm");
+			set_guide(VOC_WAVE_ID, "ment/Travelport/input_confirm");
 			memset(pScenario->szTTSFile, 0x00, sizeof(pScenario->szTTSFile));// 플래이 직후 삭제 처리
 		}
 		setPostfunc(POST_DTMF, KICC_SMSScenarioStart, 4, 0);
