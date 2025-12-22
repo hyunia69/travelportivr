@@ -542,3 +542,123 @@ case 11:
 #### 주문조회 실패 시 처리
 
 주문조회 실패 시 삼자통화 안내 없이 즉시 전화번호 재입력 화면(Case 1)으로 복귀합니다.
+
+### 7.5 발신번호(ANI) 자동 조회 [NEW - 2025-12-22]
+
+통화 시작 시 발신번호가 유효한 휴대폰 번호인 경우, 전화번호 입력을 건너뛰고 자동으로 주문을 조회합니다.
+이 기능은 사용자 편의를 위해 추가되었으며, 기존 수동 입력 흐름과 병행됩니다.
+
+#### 유효한 휴대폰 번호 판단 기준
+
+다음 접두사로 시작하는 10~11자리 숫자:
+- `010`, `011`, `016`, `017`, `018`, `019`
+
+#### 분기 흐름도
+
+```
+[통화 시작]
+    │
+    ▼
+[Case 20: 발신번호(ANI) 분기점]
+    │
+    ├── 조건: ANI 유효 & 미조회 (m_bAniChecked == FALSE)
+    │   │
+    │   ▼
+    │   [ANI로 주문조회 시도]
+    │   setPostfunc(POST_NET, KICC_ArsScenarioStart, 21, 0)
+    │   │
+    │   ▼
+    │   [Case 21: ANI 조회 결과 처리]
+    │       │
+    │       ├── 성공 (주문 있음) ───────────────────────┐
+    │       │   │                                      │
+    │       │   ├── ARS 타입 → Case 10 (삼자통화 안내)  │
+    │       │   └── SMS/TKT 타입 → Case 12 (인사말)    │
+    │       │                                          │
+    │       └── 실패 (주문 없음/DB 오류) ────────────────┤
+    │           │                                      │
+    │           ▼                                      │
+    │       [Case 1: 전화번호 입력]  ← 멘트 없이 바로 이동│
+    │                                                  │
+    └── 조건: ANI 무효 또는 이미 조회 ─────────────────────┘
+        │
+        ▼
+    [Case 1: 전화번호 입력]
+        "휴대폰 번호를 입력 후 우물 정자를 눌러주세요"
+```
+
+#### 상태(State) 번호
+
+| State | 역할 | 조건 | 다음 State |
+|-------|------|------|-----------|
+| 20 | ANI 분기점 | ANI 유효 & 미조회 | 21 (조회) 또는 1 (입력) |
+| 21 | ANI 조회 결과 처리 | 조회 성공 | 10 또는 12 |
+| 21 | ANI 조회 결과 처리 | 조회 실패 | 1 (멘트 없음) |
+
+#### 핵심 로직
+
+```cpp
+// Case 20: 발신번호 조회 조건 확인
+case 20:
+{
+    if (!pScenario->m_bAniChecked && IsValidMobileNumber(pScenario->szAni))
+    {
+        // 발신번호를 입력 전화번호로 설정
+        strncpy(pScenario->m_szInputTel, pScenario->szAni, sizeof(pScenario->m_szInputTel) - 1);
+
+        // 조회 시도 플래그 설정 (중복 조회 방지)
+        pScenario->m_bAniChecked = TRUE;
+
+        // 다중 주문 조회 시작
+        setPostfunc(POST_NET, KICC_ArsScenarioStart, 21, 0);
+        return getMultiOrderInfo_host(90);
+    }
+    else
+    {
+        // ANI 무효 또는 이미 조회 → 전화번호 입력
+        return KICC_ArsScenarioStart(1);
+    }
+}
+
+// Case 21: ANI 조회 결과 처리
+case 21:
+{
+    if (pScenario->m_DBAccess == -1 || pScenario->m_MultiOrders.nOrderCount == 0)
+    {
+        // 주문 없음 → 멘트 없이 바로 전화번호 입력
+        return KICC_ArsScenarioStart(1);
+    }
+
+    // 주문조회 성공 → request_type에 따라 분기
+    if (strcmp(pScenario->m_szRequestType, "SMS") == 0 ||
+        strcmp(pScenario->m_szRequestType, "TKT") == 0)
+    {
+        return KICC_ArsScenarioStart(12);  // 바로 인사말
+    }
+    else
+    {
+        return KICC_ArsScenarioStart(10);  // 삼자통화 안내
+    }
+}
+```
+
+#### 사용자 경험 (UX) 개선 포인트
+
+| 상황 | 처리 방식 | 이유 |
+|------|----------|------|
+| ANI 조회 성공 | 전화번호 입력 생략 → 바로 결제 진행 | 사용자 입력 단계 감소 |
+| ANI 조회 실패 | 멘트 없이 전화번호 입력으로 이동 | "주문없음" 멘트가 혼란을 줄 수 있음 |
+| ANI 무효 (유선전화 등) | 기존 흐름대로 전화번호 입력 | 하위 호환성 유지 |
+
+#### 관련 멤버 변수
+
+```cpp
+// KICC_Travelport_Scenario.h
+BOOL m_bAniChecked;  // 발신번호 조회 시도 여부 (TRUE: 이미 시도함, FALSE: 미시도)
+```
+
+#### 주의사항
+
+1. **1회 시도 원칙**: ANI 조회는 통화당 1회만 시도됩니다. 실패 후 사용자가 전화번호를 입력하면 해당 번호로 조회합니다.
+2. **플래그 초기화**: `m_bAniChecked`는 `ScenarioInit()`에서 FALSE로 초기화됩니다.
+3. **기존 흐름 유지**: ANI 조회 실패 시 기존 수동 입력 흐름으로 자연스럽게 전환됩니다.
