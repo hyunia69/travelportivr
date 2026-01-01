@@ -358,6 +358,13 @@ int KICC_ExitSvc(int state)
 		set_guide(VOC_WAVE_ID, "ment/Travelport/Error_end");	 // "이용방법 확인..."
 		setPostfunc(POST_PLAY, KICC_ExitSvc, 0xffff, 0);
 		return send_guide(NODTMF);
+	case 20:  // [NEW] 다중 주문 거부 - 담당직원 재확인 안내 후 종료
+		new_guide();
+		info_printf(localCh, "KICC_ExitSvc [%d] 담당직원 재확인 안내...", state);
+		eprintf("KICC_ExitSvc [%d] 담당직원 재확인 안내", state);
+		set_guide(VOC_WAVE_ID, "ment/Travelport/connect_assistant_reconfirm");  // "담당직원과 결제 금액을 다시 확인하신후..."
+		setPostfunc(POST_PLAY, KICC_ExitSvc, 0, 0);  // 재생 후 case 0으로 (service_end 재생)
+		return send_guide(NODTMF);
 	case 0xffff:
 		(*lpmt)->Myexit_service = NULL;
 		return  goto_hookon();
@@ -581,20 +588,10 @@ int KICC_AnnounceMultiOrders(int state)
 			return KICC_CardInput(0);
 		}
 		else {
-			// [MODIFIED] 2번 입력 시 휴대폰 번호 입력 단계로 복귀
-			info_printf(localCh, "KICC_AnnounceMultiOrders[%d] 다중 주문 안내>확인 부> 아니오 - 전화번호 재입력", state);
-			eprintf("KICC_AnnounceMultiOrders[%d] 다중 주문 안내>확인 부> 아니오 - 전화번호 재입력", state);
-
-			// ARS 타입에 따라 분기 (KICC_getOrderInfo 함수의 패턴 참조)
-			if (strcmp(pScenario->szArsType, "ARS") == 0) {
-				return KICC_ArsScenarioStart(1);  // 휴대폰 번호 입력 state
-			}
-			else if (strcmp(pScenario->szArsType, "SMS") == 0) {
-				return KICC_SMSScenarioStart(1);
-			}
-			else {
-				return pScenario->jobArs(0);
-			}
+			// [MODIFIED] 2번 입력 시 담당직원 재확인 안내 후 종료
+			info_printf(localCh, "KICC_AnnounceMultiOrders[%d] 다중 주문 안내>거부 - 담당직원 재확인 안내 후 종료", state);
+			eprintf("KICC_AnnounceMultiOrders[%d] 다중 주문 안내>거부 - 담당직원 재확인 안내 후 종료", state);
+			return KICC_ExitSvc(20);  // 담당직원 재확인 안내 → 이용감사 → 종료
 		}
 	}
 
