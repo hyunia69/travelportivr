@@ -524,7 +524,7 @@ int KICC_AnnounceMultiOrders(int state)
 			return TTS_Play(
 				(*lpmt)->chanID, 92,
 				// "%d건의 주문이 조회되었습니다. 총 결제 금액은 %d원입니다.",
-				"고객님의 항공권 결제 금액은 %d건 , 총 승인금액은 %d 원입니다",
+				"고객님께서 결제하실 항공권은 총 %d건이며, 총 승인 요청 금액은 %d원입니다",
 				pScenario->m_MultiOrders.nOrderCount,
 				pScenario->m_MultiOrders.nTotalAmount
 			);
@@ -554,12 +554,12 @@ int KICC_AnnounceMultiOrders(int state)
 			char TTSFile[2048 + 1] = { 0x00, };
 			sprintf(TTSFile, "%s", pScenario->szTTSFile);
 			set_guide(VOC_TTS_ID, TTSFile);
-			set_guide(VOC_WAVE_ID, "ment/Travelport/input_confirm");
+			set_guide(VOC_WAVE_ID, "ment/Travelport/input_confirm_amount");
 			memset(pScenario->szTTSFile, 0x00, sizeof(pScenario->szTTSFile));
 		}
 		else {
 			new_guide();
-			set_guide(VOC_WAVE_ID, "ment/Travelport/input_confirm");
+			set_guide(VOC_WAVE_ID, "ment/Travelport/input_confirm_amount");
 		}
 		
 		setPostfunc(POST_DTMF, KICC_AnnounceMultiOrders, 2, 0);
@@ -881,7 +881,7 @@ int KICC_MultiPaymentSummary(int state)
 				// [MODIFIED] TTS 멘트 변경 - 담당직원 연결 안내 추가
 				return TTS_Play(
 					(*lpmt)->chanID, 92,
-					"%d건의 결제가 완료되었습니다. 담당직원을 연결해 드리겠습니다.",
+					"총 %d건의 결제가 완료되었습니다. 담당직원을 연결해 드리겠습니다.",
 					pScenario->m_MultiOrders.nProcessedCount
 				);
 			}
@@ -935,7 +935,8 @@ int KICC_MultiPaymentSummary(int state)
 				// [MODIFIED] TTS 멘트 변경 - 담당직원 연결 안내 추가
 				return TTS_Play(
 					(*lpmt)->chanID, 92,
-					"%d건은 결제가 완료되었으며 %d건은 결제 실패하였습니다. 담당직원을 연결해 드리겠습니다.",
+					"총 %d건중, %d건은 결제가 완료되었으며, %d건은 결제 실패하였습니다. 자세한 안내를 위해 담당직원을 연결해 드리겠습니다.",
+					pScenario->m_MultiOrders.nOrderCount,
 					pScenario->m_MultiOrders.nProcessedCount,
 					pScenario->m_MultiOrders.nFailedCount
 				);
