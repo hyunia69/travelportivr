@@ -1052,7 +1052,7 @@ int  KiccPaymemtCancle_host(int holdm)
  *        -3: HTTP 응답 오류
  *        -4: 네트워크 예외
  */
-int SendFailNoti(Card_ResInfo* pCardResInfo, CARDINFO* pCardInfo)
+int SendFailNoti(Card_ResInfo* pCardResInfo)
 {
 	// [1] INI 설정 읽기 - 노티 활성화 여부 확인
 	char szEnabled[10 + 1] = { 0x00, };
@@ -1079,12 +1079,7 @@ int SendFailNoti(Card_ResInfo* pCardResInfo, CARDINFO* pCardInfo)
 
 	eprintf("[FAIL_NOTI] 노티 전송 시작 - URL:%s, TIMEOUT:%d", szNotiUrl, nTimeout);
 
-	// [4] 현재 시간 생성 (YYYYMMDDHHmmss 형식)
-	CTime CurTime = CTime::GetCurrentTime();
-	CString strTransDate = CurTime.Format("%Y%m%d%H%M%S");
-
-	// [5] JSON 데이터 생성 (KICC 노티 형식 호환)
-	// 특수문자 이스케이프 처리를 위한 버퍼
+	// [4] JSON 데이터 생성 - resMsg 특수문자 이스케이프 처리
 	char szEscapedMsg[512] = { 0x00, };
 	char* pSrc = pCardResInfo->REPLY_MESSAGE;
 	char* pDst = szEscapedMsg;
@@ -1117,52 +1112,19 @@ int SendFailNoti(Card_ResInfo* pCardResInfo, CARDINFO* pCardInfo)
 	}
 	*pDst = '\0';
 
-	// 할부개월 처리 (pCardInfo에서 가져옴)
-	char szInstallMonth[3] = { 0x00, };
-	if (pCardInfo && strlen(pCardInfo->InstPeriod) > 0) {
-		strncpy(szInstallMonth, pCardInfo->InstPeriod, sizeof(szInstallMonth) - 1);
-	}
-	else {
-		strncpy(szInstallMonth, "00", sizeof(szInstallMonth) - 1);
-	}
-
-	// JSON 문자열 생성
-	char szJsonData[4096] = { 0x00, };
+	// [MODIFIED] JSON 문자열 생성 - 필수 4개 필드만 전송
+	char szJsonData[1024] = { 0x00, };
 	sprintf_s(szJsonData, sizeof(szJsonData),
 		"{"
 		"\"resCd\":\"%s\","
 		"\"resMsg\":\"%s\","
 		"\"mallId\":\"%s\","
-		"\"notiType\":\"10\","
-		"\"pgCno\":\"%s\","
-		"\"shopOrderNo\":\"%s\","
-		"\"amount\":\"%d\","
-		"\"approvalNo\":\"%s\","
-		"\"transactionDate\":\"%s\","
-		"\"statusCode\":\"%s\","
-		"\"statusMessage\":\"%s\","
-		"\"payMethodTypeCode\":\"11\","
-		"\"issuerCode\":\"%s\","
-		"\"issuerName\":\"%s\","
-		"\"acquirerCode\":\"%s\","
-		"\"acquirerName\":\"%s\","
-		"\"installmentMonth\":\"%s\""
+		"\"shopOrderNo\":\"%s\""
 		"}",
-		pCardResInfo->REPLY_CODE,       // resCd
-		szEscapedMsg,                   // resMsg (이스케이프됨)
-		pCardResInfo->TERMINAL_ID,      // mallId
-		pCardResInfo->CONTROL_NO,       // pgCno
-		pCardResInfo->ORDER_NO,         // shopOrderNo
-		pCardResInfo->AMOUNT,           // amount
-		pCardResInfo->APPROVAL_NUM,     // approvalNo
-		strTransDate.GetBuffer(14),     // transactionDate
-		pCardResInfo->REPLY_CODE,       // statusCode
-		szEscapedMsg,                   // statusMessage (이스케이프됨)
-		pCardResInfo->issuer_cd,        // issuerCode
-		pCardResInfo->issuer_nm,        // issuerName
-		pCardResInfo->uirer_cd,         // acquirerCode
-		pCardResInfo->acquirer_nm,      // acquirerName
-		szInstallMonth                  // installmentMonth
+		pCardResInfo->REPLY_CODE,       // resCd - 응답코드
+		szEscapedMsg,                   // resMsg - 응답메시지 (이스케이프됨)
+		pCardResInfo->TERMINAL_ID,      // mallId - 가맹점ID
+		pCardResInfo->ORDER_NO          // shopOrderNo - 주문번호
 	);
 
 	eprintf("[FAIL_NOTI] JSON 데이터 생성 완료 (길이:%d)", strlen(szJsonData));

@@ -60,7 +60,7 @@ extern int  KiccPaymemt_host(int holdm);
 extern int  SMS_host(int holdm);
 
 // [NEW] 결제 실패 노티 전송 함수 선언
-extern int SendFailNoti(Card_ResInfo* pCardResInfo, CARDINFO* pCardInfo);
+extern int SendFailNoti(Card_ResInfo* pCardResInfo);
 
 int KICC_ArsScenarioStart(/* [in] */int state);
 int KICC_SMSScenarioStart(/* [in] */int state);
@@ -770,12 +770,15 @@ int KICC_ProcessMultiPayments(int state)
 					   pScenario->m_CardResInfo.REPLY_CODE);
 
 			// [NEW] 다중 주문 결제 실패 노티 전송
+			// [MODIFIED] 주문번호를 m_CardResInfo.ORDER_NO에 설정
+			strncpy(pScenario->m_CardResInfo.ORDER_NO, szCurrentOrderNo,
+				sizeof(pScenario->m_CardResInfo.ORDER_NO) - 1);
+
 			eprintf("[결제실패-다중주문] 노티 전송 시작 - ORDER_NO:%s, REPLY_CODE:%s",
 				pScenario->m_CardResInfo.ORDER_NO,
 				pScenario->m_CardResInfo.REPLY_CODE);
 
-			int nNotiResult = SendFailNoti(&pScenario->m_CardResInfo,
-				&pScenario->m_CardInfo);
+			int nNotiResult = SendFailNoti(&pScenario->m_CardResInfo);
 
 			eprintf("[결제실패-다중주문] 노티 전송 결과: %d", nNotiResult);
 		}
@@ -1282,8 +1285,7 @@ int KICC_payARS(int state)
 						pScenario->m_CardResInfo.ORDER_NO,
 						pScenario->m_CardResInfo.REPLY_CODE);
 
-					int nNotiResult = SendFailNoti(&pScenario->m_CardResInfo,
-						&pScenario->m_CardInfo);
+					int nNotiResult = SendFailNoti(&pScenario->m_CardResInfo);
 
 					eprintf("[결제실패] 노티 전송 결과: %d", nNotiResult);
 					// [NEW] 결제 실패 노티 전송 끝
