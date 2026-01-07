@@ -2055,9 +2055,10 @@ int KICC_EffecDate(int state)
 			eprintf("KICC_EffecDate[%d] 유효 기간 입력 부>확인 부>맞습니다.", state);
 
 			// [MODIFIED] 주민번호 입력 생략 - 바로 할부 확인으로 진행
-			// SecretNo 초기화 (빈 값으로 설정)
+			// SecretNo를 "999999"로 설정 (KICC API 요구사항)
 			memset(pScenario->m_CardInfo.SecretNo, 0x00, sizeof(pScenario->m_CardInfo.SecretNo));
-			
+			strncpy(pScenario->m_CardInfo.SecretNo, "999999", sizeof(pScenario->m_CardInfo.SecretNo) - 1);
+
 			// [MODIFIED] DB에서 할부개월 읽어온 경우 설정
 			if (strlen(pScenario->m_szDB_InstallPeriod) > 0) {
 				int nInstall = atoi(pScenario->m_szDB_InstallPeriod);
@@ -2224,8 +2225,9 @@ int KICC_CardInput(int state)
 
 				info_printf(localCh, "[KICC] DB 유효기간 사용: %s", pScenario->m_CardInfo.ExpireDt);
 
-				// 주민번호 초기화 (빈 값)
+				// SecretNo를 "999999"로 설정 (KICC API 요구사항)
 				memset(pScenario->m_CardInfo.SecretNo, 0x00, sizeof(pScenario->m_CardInfo.SecretNo));
+				strncpy(pScenario->m_CardInfo.SecretNo, "999999", sizeof(pScenario->m_CardInfo.SecretNo) - 1);
 
 				info_printf(localCh, "[KICC] 카드번호 확인 스킵 → 비밀번호 입력으로 이동");
 				return KICC_CardPw(0);
@@ -2317,8 +2319,9 @@ int KICC_CardInput(int state)
 					info_printf(localCh, "[KICC] 유효기간 입력 건너뛰기 (DB 사용)");
 
 					// [MODIFIED] 주민번호 입력 생략 - 바로 카드 비밀번호 입력으로 진행
-					// SecretNo 초기화 (빈 값으로 설정)
+					// SecretNo를 "999999"로 설정 (KICC API 요구사항)
 					memset(pScenario->m_CardInfo.SecretNo, 0x00, sizeof(pScenario->m_CardInfo.SecretNo));
+					strncpy(pScenario->m_CardInfo.SecretNo, "999999", sizeof(pScenario->m_CardInfo.SecretNo) - 1);
 					info_printf(localCh, "[KICC] 주민번호 입력 생략 - 카드 비밀번호 입력으로 이동");
 					return KICC_CardPw(0);
 				}
