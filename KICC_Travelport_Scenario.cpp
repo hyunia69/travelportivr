@@ -59,6 +59,9 @@ extern int  KiccPaymemt_host(int holdm);
 
 extern int  SMS_host(int holdm);
 
+// [NEW] 결제 실패 노티 전송 함수 선언
+extern int SendFailNoti(Card_ResInfo* pCardResInfo, CARDINFO* pCardInfo);
+
 int KICC_ArsScenarioStart(/* [in] */int state);
 int KICC_SMSScenarioStart(/* [in] */int state);
 int KICC_getMultiOrderInfo(int state);
@@ -81,7 +84,7 @@ int KICC_CardInput(int state);
 #define	MSG_INBOUND_LINE	WM_USER + 03
 #define	MSG_ASR_LINE	    WM_USER + 04
 
-#define	PARAINI		".\\KiccPay_Travelport_para.ini"
+#define	PARAINI		".\\KiccPay_Travelport_Test_para.ini"
 #define MAXCHAN 	240		// 최대 회선 수
 //#define MAXCHAN 	120		// 최대 회선 수
 
@@ -765,6 +768,16 @@ int KICC_ProcessMultiPayments(int state)
 					   szCurrentOrderNo,
 					   pScenario->m_CardResInfo.REPLY_MESSAGE,
 					   pScenario->m_CardResInfo.REPLY_CODE);
+
+			// [NEW] 다중 주문 결제 실패 노티 전송
+			eprintf("[결제실패-다중주문] 노티 전송 시작 - ORDER_NO:%s, REPLY_CODE:%s",
+				pScenario->m_CardResInfo.ORDER_NO,
+				pScenario->m_CardResInfo.REPLY_CODE);
+
+			int nNotiResult = SendFailNoti(&pScenario->m_CardResInfo,
+				&pScenario->m_CardInfo);
+
+			eprintf("[결제실패-다중주문] 노티 전송 결과: %d", nNotiResult);
 		}
 
 		// DB 저장 시작: 결제 로그 저장 (성공/실패 모두 기록)
@@ -1264,6 +1277,17 @@ int KICC_payARS(int state)
 				new_guide();
 				if (strcmp(pScenario->m_CardResInfo.REPLY_CODE, "0000") != 0)
 				{// 연동을 성공 다만 결제가 실제로 실패 되었으므로 자동 취소할 이유 없다.
+					// [NEW] 결제 실패 노티 전송 시작
+					eprintf("[결제실패] 노티 전송 시작 - ORDER_NO:%s, REPLY_CODE:%s",
+						pScenario->m_CardResInfo.ORDER_NO,
+						pScenario->m_CardResInfo.REPLY_CODE);
+
+					int nNotiResult = SendFailNoti(&pScenario->m_CardResInfo,
+						&pScenario->m_CardInfo);
+
+					eprintf("[결제실패] 노티 전송 결과: %d", nNotiResult);
+					// [NEW] 결제 실패 노티 전송 끝
+
 					if (TTS_Play)
 					{
 						setPostfunc(POST_NET, KICC_payARS, 91, 0);

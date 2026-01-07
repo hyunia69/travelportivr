@@ -83,7 +83,7 @@ extern int(*atox)(char *s);
 #define	MSG_INBOUND_LINE	WM_USER + 03
 #define	MSG_ASR_LINE	    WM_USER + 04
 
-#define	PARAINI		".\\KiccPay_Travelport_para.ini"
+#define	PARAINI		".\\KiccPay_Travelport_Test_para.ini"
 #define MAXCHAN 	240		// 최대 회선 수
 //#define MAXCHAN 	120		// 최대 회선 수
 
@@ -1037,4 +1037,241 @@ int  KiccPaymemtCancle_host(int holdm)
 	pScenario->m_hPayThread = (HANDLE)_beginthreadex(NULL, 0, KiccArsPayCancleProcess, (LPVOID)(*lpmt), 0, &(pScenario->paythreadID));
 
 	return(0);
+}
+
+/**
+ * [NEW] 결제 실패 노티 전송 함수
+ * @brief 결제 실패 시 KICC EasyPay 노티 형식과 동일한 JSON 데이터를 외부 URL로 HTTP POST 전송
+ * @param pCardResInfo 결제 응답 정보 구조체 포인터
+ * @param pCardInfo 카드 입력 정보 구조체 포인터
+ * @return 전송 결과
+ *         1: 성공
+ *         0: 비활성화 상태 (스킵)
+ *        -1: URL 미설정
+ *        -2: URL 파싱 실패
+ *        -3: HTTP 응답 오류
+ *        -4: 네트워크 예외
+ */
+int SendFailNoti(Card_ResInfo* pCardResInfo, CARDINFO* pCardInfo)
+{
+	// [1] INI 설정 읽기 - 노티 활성화 여부 확인
+	char szEnabled[10 + 1] = { 0x00, };
+	GetPrivateProfileString("FAIL_NOTI", "NOTI_ENABLED", "0", szEnabled, sizeof(szEnabled), PARAINI);
+
+	if (strcmp(szEnabled, "1") != 0) {
+		eprintf("[FAIL_NOTI] 노티 전송 비활성화 상태 (NOTI_ENABLED=%s)", szEnabled);
+		return 0;  // 비활성화 상태
+	}
+
+	// [2] 노티 URL 읽기
+	char szNotiUrl[512 + 1] = { 0x00, };
+	GetPrivateProfileString("FAIL_NOTI", "NOTI_URL", "", szNotiUrl, sizeof(szNotiUrl), PARAINI);
+
+	if (strlen(szNotiUrl) == 0) {
+		eprintf("[FAIL_NOTI] 노티 URL 미설정 오류");
+		return -1;  // URL 미설정
+	}
+
+	// [3] 타임아웃 설정 읽기
+	int nTimeout = GetPrivateProfileInt("FAIL_NOTI", "NOTI_TIMEOUT", 5000, PARAINI);
+	if (nTimeout < 1000) nTimeout = 1000;    // 최소 1초
+	if (nTimeout > 30000) nTimeout = 30000;  // 최대 30초
+
+	eprintf("[FAIL_NOTI] 노티 전송 시작 - URL:%s, TIMEOUT:%d", szNotiUrl, nTimeout);
+
+	// [4] 현재 시간 생성 (YYYYMMDDHHmmss 형식)
+	CTime CurTime = CTime::GetCurrentTime();
+	CString strTransDate = CurTime.Format("%Y%m%d%H%M%S");
+
+	// [5] JSON 데이터 생성 (KICC 노티 형식 호환)
+	// 특수문자 이스케이프 처리를 위한 버퍼
+	char szEscapedMsg[512] = { 0x00, };
+	char* pSrc = pCardResInfo->REPLY_MESSAGE;
+	char* pDst = szEscapedMsg;
+	int nDstLen = sizeof(szEscapedMsg) - 1;
+
+	// JSON 특수문자 이스케이프 처리 (", \, 제어문자)
+	while (*pSrc && (pDst - szEscapedMsg) < nDstLen - 2) {
+		if (*pSrc == '"' || *pSrc == '\\') {
+			*pDst++ = '\\';
+		}
+		else if (*pSrc == '\n') {
+			*pDst++ = '\\';
+			*pDst++ = 'n';
+			pSrc++;
+			continue;
+		}
+		else if (*pSrc == '\r') {
+			*pDst++ = '\\';
+			*pDst++ = 'r';
+			pSrc++;
+			continue;
+		}
+		else if (*pSrc == '\t') {
+			*pDst++ = '\\';
+			*pDst++ = 't';
+			pSrc++;
+			continue;
+		}
+		*pDst++ = *pSrc++;
+	}
+	*pDst = '\0';
+
+	// 할부개월 처리 (pCardInfo에서 가져옴)
+	char szInstallMonth[3] = { 0x00, };
+	if (pCardInfo && strlen(pCardInfo->InstPeriod) > 0) {
+		strncpy(szInstallMonth, pCardInfo->InstPeriod, sizeof(szInstallMonth) - 1);
+	}
+	else {
+		strncpy(szInstallMonth, "00", sizeof(szInstallMonth) - 1);
+	}
+
+	// JSON 문자열 생성
+	char szJsonData[4096] = { 0x00, };
+	sprintf_s(szJsonData, sizeof(szJsonData),
+		"{"
+		"\"resCd\":\"%s\","
+		"\"resMsg\":\"%s\","
+		"\"mallId\":\"%s\","
+		"\"notiType\":\"10\","
+		"\"pgCno\":\"%s\","
+		"\"shopOrderNo\":\"%s\","
+		"\"amount\":\"%d\","
+		"\"approvalNo\":\"%s\","
+		"\"transactionDate\":\"%s\","
+		"\"statusCode\":\"%s\","
+		"\"statusMessage\":\"%s\","
+		"\"payMethodTypeCode\":\"11\","
+		"\"issuerCode\":\"%s\","
+		"\"issuerName\":\"%s\","
+		"\"acquirerCode\":\"%s\","
+		"\"acquirerName\":\"%s\","
+		"\"installmentMonth\":\"%s\""
+		"}",
+		pCardResInfo->REPLY_CODE,       // resCd
+		szEscapedMsg,                   // resMsg (이스케이프됨)
+		pCardResInfo->TERMINAL_ID,      // mallId
+		pCardResInfo->CONTROL_NO,       // pgCno
+		pCardResInfo->ORDER_NO,         // shopOrderNo
+		pCardResInfo->AMOUNT,           // amount
+		pCardResInfo->APPROVAL_NUM,     // approvalNo
+		strTransDate.GetBuffer(14),     // transactionDate
+		pCardResInfo->REPLY_CODE,       // statusCode
+		szEscapedMsg,                   // statusMessage (이스케이프됨)
+		pCardResInfo->issuer_cd,        // issuerCode
+		pCardResInfo->issuer_nm,        // issuerName
+		pCardResInfo->uirer_cd,         // acquirerCode
+		pCardResInfo->acquirer_nm,      // acquirerName
+		szInstallMonth                  // installmentMonth
+	);
+
+	eprintf("[FAIL_NOTI] JSON 데이터 생성 완료 (길이:%d)", strlen(szJsonData));
+	eprintf("[FAIL_NOTI] JSON: %s", szJsonData);
+
+	// [6] URL 파싱 (서버, 포트, 경로 분리)
+	CString strUrl(szNotiUrl);
+	CString strServer, strPath;
+	INTERNET_PORT nPort = INTERNET_DEFAULT_HTTP_PORT;
+	DWORD dwServiceType = AFX_INET_SERVICE_HTTP;
+
+	// URL 파싱
+	if (!AfxParseURL(strUrl, dwServiceType, strServer, strPath, nPort)) {
+		eprintf("[FAIL_NOTI] URL 파싱 실패: %s", szNotiUrl);
+		return -2;  // URL 파싱 실패
+	}
+
+	// HTTPS 처리
+	DWORD dwFlags = 0;
+	if (dwServiceType == AFX_INET_SERVICE_HTTPS) {
+		nPort = (nPort == INTERNET_DEFAULT_HTTP_PORT) ? INTERNET_DEFAULT_HTTPS_PORT : nPort;
+		dwFlags = INTERNET_FLAG_SECURE | INTERNET_FLAG_IGNORE_CERT_CN_INVALID | INTERNET_FLAG_IGNORE_CERT_DATE_INVALID;
+	}
+
+	eprintf("[FAIL_NOTI] URL 파싱 결과 - Server:%s, Port:%d, Path:%s, HTTPS:%d",
+		strServer.GetBuffer(), nPort, strPath.GetBuffer(), (dwServiceType == AFX_INET_SERVICE_HTTPS) ? 1 : 0);
+
+	// [7] HTTP POST 전송
+	int nResult = 1;  // 기본값: 성공
+	CInternetSession* pSession = NULL;
+	CHttpConnection* pConnection = NULL;
+	CHttpFile* pFile = NULL;
+
+	try {
+		// 세션 생성
+		pSession = new CInternetSession(_T("KICC_FailNoti"), 1, INTERNET_OPEN_TYPE_PRECONFIG);
+		pSession->SetOption(INTERNET_OPTION_CONNECT_TIMEOUT, nTimeout);
+		pSession->SetOption(INTERNET_OPTION_RECEIVE_TIMEOUT, nTimeout);
+		pSession->SetOption(INTERNET_OPTION_SEND_TIMEOUT, nTimeout);
+
+		// HTTP 연결
+		pConnection = pSession->GetHttpConnection(strServer, nPort);
+
+		// HTTP 요청 생성
+		pFile = pConnection->OpenRequest(
+			CHttpConnection::HTTP_VERB_POST,
+			strPath,
+			NULL,
+			1,
+			NULL,
+			NULL,
+			dwFlags
+		);
+
+		// Content-Type 헤더 추가
+		CString strHeaders = _T("Content-Type: application/json; charset=utf-8\r\n");
+
+		// 요청 전송
+		BOOL bResult = pFile->SendRequest(strHeaders, (LPVOID)szJsonData, (DWORD)strlen(szJsonData));
+
+		if (!bResult) {
+			eprintf("[FAIL_NOTI] HTTP 요청 전송 실패");
+			nResult = -3;
+		}
+		else {
+			// HTTP 응답 코드 확인
+			DWORD dwStatusCode = 0;
+			pFile->QueryInfoStatusCode(dwStatusCode);
+
+			eprintf("[FAIL_NOTI] HTTP 응답 코드: %d", dwStatusCode);
+
+			if (dwStatusCode >= 200 && dwStatusCode < 300) {
+				// 성공 (2xx)
+				eprintf("[FAIL_NOTI] 노티 전송 성공");
+				nResult = 1;
+			}
+			else {
+				// HTTP 오류
+				eprintf("[FAIL_NOTI] HTTP 응답 오류 (코드:%d)", dwStatusCode);
+				nResult = -3;
+			}
+		}
+	}
+	catch (CInternetException* pEx) {
+		// 네트워크 예외 처리
+		TCHAR szError[256] = { 0x00, };
+		pEx->GetErrorMessage(szError, 255);
+		eprintf("[FAIL_NOTI] 네트워크 예외 발생: %s", szError);
+		pEx->Delete();
+		nResult = -4;
+	}
+	catch (...) {
+		eprintf("[FAIL_NOTI] 알 수 없는 예외 발생");
+		nResult = -4;
+	}
+
+	// [8] 리소스 정리
+	if (pFile) {
+		pFile->Close();
+		delete pFile;
+	}
+	if (pConnection) {
+		pConnection->Close();
+		delete pConnection;
+	}
+	if (pSession) {
+		delete pSession;
+	}
+
+	eprintf("[FAIL_NOTI] 노티 전송 완료 - 결과:%d", nResult);
+	return nResult;
 }
