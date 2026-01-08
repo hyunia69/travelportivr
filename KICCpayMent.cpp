@@ -1044,6 +1044,41 @@ int  KiccPaymemtCancle_host(int holdm)
 }
 
 /**
+ * [NEW] EUC-KR(CP949) 문자열을 UTF-8로 변환
+ * @param pszEucKr  EUC-KR 입력 문자열
+ * @param pszUtf8   UTF-8 출력 버퍼
+ * @param nUtf8Size 출력 버퍼 크기
+ * @return 변환된 UTF-8 문자열 길이, 실패 시 -1
+ */
+int ConvertEucKrToUtf8(const char* pszEucKr, char* pszUtf8, int nUtf8Size)
+{
+	if (!pszEucKr || !pszUtf8 || nUtf8Size <= 0) {
+		return -1;
+	}
+
+	// Step 1: EUC-KR(CP949) → Unicode (wchar_t)
+	int nWideLen = MultiByteToWideChar(949, 0, pszEucKr, -1, NULL, 0);
+	if (nWideLen <= 0) {
+		return -1;
+	}
+
+	wchar_t* pwszWide = new wchar_t[nWideLen];
+	MultiByteToWideChar(949, 0, pszEucKr, -1, pwszWide, nWideLen);
+
+	// Step 2: Unicode → UTF-8
+	int nUtf8Len = WideCharToMultiByte(CP_UTF8, 0, pwszWide, -1, NULL, 0, NULL, NULL);
+	if (nUtf8Len <= 0 || nUtf8Len > nUtf8Size) {
+		delete[] pwszWide;
+		return -1;
+	}
+
+	WideCharToMultiByte(CP_UTF8, 0, pwszWide, -1, pszUtf8, nUtf8Size, NULL, NULL);
+	delete[] pwszWide;
+
+	return nUtf8Len - 1;  // null terminator 제외
+}
+
+/**
  * [NEW] 결제 실패 노티 전송 함수
  * @brief 결제 실패 시 KICC EasyPay 노티 형식과 동일한 JSON 데이터를 외부 URL로 HTTP POST 전송
  * @param pCardResInfo 결제 응답 정보 구조체 포인터
@@ -1083,9 +1118,17 @@ int SendFailNoti(Card_ResInfo* pCardResInfo)
 
 	eprintf("[FAIL_NOTI] 노티 전송 시작 - URL:%s, TIMEOUT:%d", szNotiUrl, nTimeout);
 
-	// [4] JSON 데이터 생성 - resMsg 특수문자 이스케이프 처리
+	// [4] JSON 데이터 생성 - resMsg EUC-KR→UTF-8 변환 후 이스케이프 처리
+	// [MODIFIED] KICC API 응답이 EUC-KR이므로 UTF-8로 변환
+	char szUtf8Msg[512] = { 0x00, };
+	int nConvLen = ConvertEucKrToUtf8(pCardResInfo->REPLY_MESSAGE, szUtf8Msg, sizeof(szUtf8Msg));
+	if (nConvLen < 0) {
+		eprintf("[FAIL_NOTI] UTF-8 변환 실패, 원본 사용");
+		strncpy_s(szUtf8Msg, sizeof(szUtf8Msg), pCardResInfo->REPLY_MESSAGE, _TRUNCATE);
+	}
+
 	char szEscapedMsg[512] = { 0x00, };
-	char* pSrc = pCardResInfo->REPLY_MESSAGE;
+	char* pSrc = szUtf8Msg;  // UTF-8 변환된 문자열 사용
 	char* pDst = szEscapedMsg;
 	int nDstLen = sizeof(szEscapedMsg) - 1;
 

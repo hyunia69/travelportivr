@@ -2155,6 +2155,8 @@ int KICC_CardInput(int state)
 			if (pScenario->m_bUseDbCardInfo) {
 				// [NEW] DB 사용 시: 4자리 입력 (종료 문자 없이 자동 처리)
 				info_printf(localCh, "[KICC] DB 사용 모드 - 카드번호 뒤 4자리 입력");
+				eprintf("KICC_CardInput [%d]  DB 사용 모드 - 카드번호 뒤 4자리 입력", state);
+
 				set_guide(VOC_WAVE_ID, "ment/Travelport/input_card_num_4");	 // "카드번호 ..우물정자를..."
 				setPostfunc(POST_DTMF, KICC_CardInput, 1, 0);
 				return send_guide(4);
@@ -2162,6 +2164,7 @@ int KICC_CardInput(int state)
 			else {
 				// [기존] 전체 카드번호 입력 (최대 17자리)
 				info_printf(localCh, "[KICC] 기존 모드 - 카드번호 16자리 입력");
+				eprintf("KICC_CardInput [%d]  기존 모드 - 카드번호 16자리 입력", state);
 				set_guide(VOC_WAVE_ID, "ment/_common/common_audio/input_card_num_var");	 // "카드번호 ..우물정자를..."
 				setPostfunc(POST_DTMF, KICC_CardInput, 1, 0);
 				return send_guide(17);
