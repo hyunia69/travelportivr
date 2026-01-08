@@ -84,7 +84,8 @@ int KICC_CardInput(int state);
 #define	MSG_INBOUND_LINE	WM_USER + 03
 #define	MSG_ASR_LINE	    WM_USER + 04
 
-#define	PARAINI		".\\KiccPay_Travelport_Test_para.ini"
+// #define	PARAINI		".\\KiccPay_Travelport_Test_para.ini"
+#define	PARAINI		".\\KiccPay_Travelport_para.ini"
 #define MAXCHAN 	240		// 최대 회선 수
 //#define MAXCHAN 	120		// 최대 회선 수
 
@@ -549,7 +550,7 @@ int KICC_AnnounceMultiOrders(int state)
 		// TTS 재생 완료 후 확인 프롬프트
 		info_printf(localCh, "KICC_AnnounceMultiOrders [%d] 다중 주문 안내>확인 부", state);
 		eprintf("KICC_AnnounceMultiOrders [%d] 다중 주문 안내>확인 부", state);
-		
+
 		if (pScenario->m_TTSAccess == -1) {
 			new_guide();
 			info_printf(localCh, "KICC_AnnounceMultiOrders [%d] 현재 통화량이 많아!지연상황이 발생..", state);
@@ -558,7 +559,7 @@ int KICC_AnnounceMultiOrders(int state)
 			setPostfunc(POST_PLAY, KICC_ExitSvc, 0, 0);
 			return send_guide(NODTMF);
 		}
-		
+
 		if (strlen(pScenario->szTTSFile) > 0) {
 			new_guide();
 			char TTSFile[2048 + 1] = { 0x00, };
@@ -571,7 +572,7 @@ int KICC_AnnounceMultiOrders(int state)
 			new_guide();
 			set_guide(VOC_WAVE_ID, "ment/Travelport/input_confirm_amount");
 		}
-		
+
 		setPostfunc(POST_DTMF, KICC_AnnounceMultiOrders, 2, 0);
 		return send_guide(1);
 
@@ -653,25 +654,25 @@ int KICC_ProcessMultiPayments(int state)
 		// KiccArsPayProcess에서 사용하는 필드들 설정
 		// m_szterminal_id, m_szorder_no, m_szgood_nm, m_szcust_nm 등
 		memset(pScenario->m_szterminal_id, 0x00, sizeof(pScenario->m_szterminal_id));
-		strncpy(pScenario->m_szterminal_id, 
-				pScenario->m_CardResInfo.TERMINAL_ID, 
+		strncpy(pScenario->m_szterminal_id,
+				pScenario->m_CardResInfo.TERMINAL_ID,
 				sizeof(pScenario->m_szterminal_id) - 1);
-		
+
 		memset(pScenario->m_szorder_no, 0x00, sizeof(pScenario->m_szorder_no));
-		strncpy(pScenario->m_szorder_no, 
-				pScenario->m_CardResInfo.ORDER_NO, 
+		strncpy(pScenario->m_szorder_no,
+				pScenario->m_CardResInfo.ORDER_NO,
 				sizeof(pScenario->m_szorder_no) - 1);
-		
+
 		memset(pScenario->m_szgood_nm, 0x00, sizeof(pScenario->m_szgood_nm));
-		strncpy(pScenario->m_szgood_nm, 
-				pScenario->m_CardResInfo.GOOD_NM, 
+		strncpy(pScenario->m_szgood_nm,
+				pScenario->m_CardResInfo.GOOD_NM,
 				sizeof(pScenario->m_szgood_nm) - 1);
-		
+
 		memset(pScenario->m_szcust_nm, 0x00, sizeof(pScenario->m_szcust_nm));
-		strncpy(pScenario->m_szcust_nm, 
-				pScenario->m_CardResInfo.CUST_NM, 
+		strncpy(pScenario->m_szcust_nm,
+				pScenario->m_CardResInfo.CUST_NM,
 				sizeof(pScenario->m_szcust_nm) - 1);
-		
+
 		// 금액 설정
 		pScenario->m_namount = pScenario->m_CardResInfo.TOTAMOUNT;
 
@@ -679,7 +680,7 @@ int KICC_ProcessMultiPayments(int state)
 				   nCurrentIdx + 1, nTotalCount,
 				   pScenario->m_CardResInfo.ORDER_NO,
 				   pScenario->m_CardResInfo.TOTAMOUNT);
-		
+
 		// 설정된 값 확인 로그
 		eprintf("[주문정보설정] m_szterminal_id:%s, m_szorder_no:%s, m_szgood_nm:%s, m_namount:%d",
 				   pScenario->m_szterminal_id,
@@ -715,26 +716,26 @@ int KICC_ProcessMultiPayments(int state)
 		// m_CardResInfo가 변경되었을 수 있으므로 원본 주문 정보에서 주문번호 가져오기
 		char szCurrentOrderNo[32 + 1];
 		memset(szCurrentOrderNo, 0x00, sizeof(szCurrentOrderNo));
-		
+
 		// 현재 처리 중인 주문의 주문번호 가져오기 (m_CardResInfo가 변경되었을 수 있음)
 		if (nCurrentIdx < pScenario->m_MultiOrders.nOrderCount) {
-			strncpy(szCurrentOrderNo, 
-					pScenario->m_MultiOrders.orders[nCurrentIdx].ORDER_NO, 
+			strncpy(szCurrentOrderNo,
+					pScenario->m_MultiOrders.orders[nCurrentIdx].ORDER_NO,
 					sizeof(szCurrentOrderNo) - 1);
 		}
 		else {
 			// 백업: m_CardResInfo에서 가져오기
-			strncpy(szCurrentOrderNo, 
-					pScenario->m_CardResInfo.ORDER_NO, 
+			strncpy(szCurrentOrderNo,
+					pScenario->m_CardResInfo.ORDER_NO,
 					sizeof(szCurrentOrderNo) - 1);
 		}
-		
+
 		eprintf("[결제결과확인] 주문번호:%s, m_PayResult:%d, REPLY_CODE:%s, REPLY_MESSAGE:%s",
 			   szCurrentOrderNo,
 			   pScenario->m_PayResult,
 			   pScenario->m_CardResInfo.REPLY_CODE,
 			   pScenario->m_CardResInfo.REPLY_MESSAGE);
-		
+
 		// [MODIFIED] REPLY_CODE가 "0000"이면 성공
 		// 주의: m_PayResult는 DB 작업 결과이므로 결제 성공 판단에 사용하면 안됨
 		BOOL bSuccess = FALSE;
@@ -742,7 +743,7 @@ int KICC_ProcessMultiPayments(int state)
 			bSuccess = TRUE;
 			pScenario->m_PayResult = 1;  // 성공 시 m_PayResult도 업데이트
 		}
-		
+
 		if (bSuccess) {
 			// 성공
 			pScenario->m_MultiOrders.nProcessedCount++;
@@ -793,21 +794,21 @@ int KICC_ProcessMultiPayments(int state)
 	{
 		// 결제 로그 저장 결과 확인
 		eprintf("[DB저장] 결제 로그 저장 결과: m_PayResult=%d", pScenario->m_PayResult);
-		
+
 		// 현재 주문번호 다시 가져오기
 		char szCurrentOrderNo2[32 + 1];
 		memset(szCurrentOrderNo2, 0x00, sizeof(szCurrentOrderNo2));
 		if (nCurrentIdx < pScenario->m_MultiOrders.nOrderCount) {
-			strncpy(szCurrentOrderNo2, 
-					pScenario->m_MultiOrders.orders[nCurrentIdx].ORDER_NO, 
+			strncpy(szCurrentOrderNo2,
+					pScenario->m_MultiOrders.orders[nCurrentIdx].ORDER_NO,
 					sizeof(szCurrentOrderNo2) - 1);
 		}
 		else {
-			strncpy(szCurrentOrderNo2, 
-					pScenario->m_CardResInfo.ORDER_NO, 
+			strncpy(szCurrentOrderNo2,
+					pScenario->m_CardResInfo.ORDER_NO,
 					sizeof(szCurrentOrderNo2) - 1);
 		}
-		
+
 		// [MODIFIED] REPLY_CODE가 "0000"이면 성공
 		BOOL bSuccess2 = (strcmp(pScenario->m_CardResInfo.REPLY_CODE, "0000") == 0);
 
@@ -1170,7 +1171,7 @@ int KICC_payARS(int state)
 				info_printf(localCh, "KICC_payARS [%d]  결제 연동 후 로그 DB 기록 부 >  로그 DB 시스템 장애", state);
 				eprintf("KICC_payARS [%d]  결제 연동 후 로그 DB 기록 부 >  로그 DB 시스템 장애", state);
 				// 자동으로 결제 취소
-				// 결제 연동 성공시 
+				// 결제 연동 성공시
 				if (strcmp(pScenario->m_CardResInfo.REPLY_CODE, "0000") == 0)
 				{
 					memset(&pScenario->m_Card_CancleInfo, 0x00, sizeof(Card_CancleInfo));
@@ -1218,7 +1219,7 @@ int KICC_payARS(int state)
 					set_guide(399);
 					setPostfunc(POST_PLAY, KICC_ExitSvc, 0, 0);
 					return send_guide(NODTMF);
-	
+
 				}
 			}
 			else if (pScenario->m_PayResult == 0)
@@ -1318,14 +1319,14 @@ int KICC_payARS(int state)
 			}
 		case 70:
 			setPostfunc(POST_NET, KICC_payARS, 80, 0);
-			return upOrderPayState_host(92); 
+			return upOrderPayState_host(92);
 		case 80:
 			if (pScenario->m_PayResult < 0)
 			{
 				info_printf(localCh, "KICC_payARS [%d] 결제 연동 후 로그 DB 기록 부 >  주문 정보 결제 상태 기록 시스템 장애", state);
 				eprintf("KICC_payARS [%d] 결제 연동 후 로그 DB 기록 부 >  주문 정보 결제 상태 기록 시스템 장애", state);
 				// 자동으로 결제 취소
-				// 결제믐 
+				// 결제믐
 				if (strcmp(pScenario->m_CardResInfo.REPLY_CODE, "0000") == 0)
 				{
 					memset(&pScenario->m_Card_CancleInfo, 0x00, sizeof(Card_CancleInfo));
@@ -2027,7 +2028,7 @@ int KICC_EffecDate(int state)
 				return send_error();
 			}
 			new_guide();
-			// 유호기간을 년월로 그대로 입력한다.	
+			// 유호기간을 년월로 그대로 입력한다.
 			memset(pScenario->m_CardInfo.ExpireDt, 0x00, sizeof(pScenario->m_CardInfo.ExpireDt));
 			memcpy(pScenario->m_CardInfo.ExpireDt, (*lpmt)->dtmfs, sizeof(pScenario->m_CardInfo.ExpireDt) - 1);
 
@@ -2095,7 +2096,7 @@ int KICC_EffecDate(int state)
 					info_printf(localCh, "[KICC] DB 할부개월 적용: %s개월", pScenario->m_CardInfo.InstPeriod);
 				}
 			}
-			
+
 			info_printf(localCh, "[KICC] 주민번호 입력 생략 - 할부 확인으로 이동");
 			return KICC_InstallmentCConfrim(0);
 		}
@@ -2169,7 +2170,7 @@ int KICC_CardInput(int state)
 		{
 			char szInputCard[20];
 			memset(szInputCard, 0x00, sizeof(szInputCard));
-			
+
 			// ========================================
 			// [MODIFIED] DB 사용 여부에 따라 검증
 			// ========================================
@@ -2177,14 +2178,14 @@ int KICC_CardInput(int state)
 				// [NEW] 뒤 4자리 검증 - KICC_EffecDate 패턴 적용 (종료 문자 없이 처리)
 				// dtmfs에서 직접 읽기 (종료 문자가 없으므로 숫자만 들어있음)
 				strncpy(szInputCard, (*lpmt)->dtmfs, sizeof(szInputCard) - 1);
-				
+
 				// 길이 검증 (정확히 4자리)
 				int nLen = strlen(szInputCard);
 				if (nLen != 4) {
 					eprintf("KICC_CardInput [%d]  Card 번호 입력부>잘못 누르셨습니다.....", state);
 					return send_error();
 				}
-				
+
 				// 숫자만 허용
 				if (check_validkey(szInputCard) < 0) {
 					eprintf("KICC_CardInput [%d]  Card 번호 입력부>잘못 누르셨습니다.....", state);
@@ -2194,7 +2195,7 @@ int KICC_CardInput(int state)
 				// [NEW] DB 앞자리(12자리) + 입력받은 뒤자리(4자리) = 16자리 완성
 				char szFullCard[17];
 				memset(szFullCard, 0x00, sizeof(szFullCard));
-				
+
 				// DB 카드번호 앞자리 확인
 				if (strlen(pScenario->m_szDB_CardPrefix) != 12) {
 					eprintf("[KICC] DB 카드번호 앞자리 길이 오류: %d자리 (기대: 12자리), 값: %s",
@@ -2202,7 +2203,7 @@ int KICC_CardInput(int state)
 						pScenario->m_szDB_CardPrefix);
 					return send_error();
 				}
-				
+
 				sprintf_s(szFullCard, sizeof(szFullCard), "%s%s", pScenario->m_szDB_CardPrefix, szInputCard);
 
 				// 최종 카드번호 저장
@@ -2839,7 +2840,7 @@ int KICC_SMSScenarioStart(/* [in] */int state)
 
 		memset(pScenario->m_szAuth_no, 0x00, sizeof(pScenario->m_szAuth_no));
 		memcpy(pScenario->m_szAuth_no, (*lpmt)->dtmfs, sizeof(pScenario->m_szAuth_no) - 1);
-		
+
 		if (TTS_Play)
 		{
 			setPostfunc(POST_NET, KICC_SMSScenarioStart, 3, 0);
@@ -2873,7 +2874,7 @@ int KICC_SMSScenarioStart(/* [in] */int state)
 			char TTSFile[2048 + 1] = { 0x00, };
 			new_guide();
 
-			set_guide(VOC_WAVE_ID, "audio/input_sms_msg"); //입력 하신 주문 번호는 
+			set_guide(VOC_WAVE_ID, "audio/input_sms_msg"); //입력 하신 주문 번호는
 			set_guide(VOC_TTS_ID, TTSFile);	 // 주문번호 확일을 위해 주문 번호 재생
 			set_guide(VOC_WAVE_ID, "ment/Travelport/input_confirm");
 			memset(pScenario->szTTSFile, 0x00, sizeof(pScenario->szTTSFile));// 플래이 직후 삭제 처리
@@ -2963,7 +2964,7 @@ int CKICC_Scenario::ScenarioInit(LPMTP *Port, char *ArsType)
 	(*lpmt)->pScenario = (void *)this;
 	nChan = Port->chanID;
 	m_Myport = Port;
-	//동기화 개체 
+	//동기화 개체
 	strncpy(szDnis, m_Myport->dnis, sizeof(szDnis) - 1);
 	strncpy(szAni, m_Myport->ani, sizeof(szAni) - 1);
 	strncpy(szArsType, ArsType, sizeof(szArsType) - 1);
@@ -3000,9 +3001,9 @@ int CKICC_Scenario::ScenarioInit(LPMTP *Port, char *ArsType)
 //
 int CKICC_Scenario::jobArs(/* [in] */int state)
 {
-	// 이후 객체 함수 이용에 제약이 따르므로 
+	// 이후 객체 함수 이용에 제약이 따르므로
 	// 자체 동기 모듈이 요구 된다.
-	// 별도의 DLL이므로 
+	// 별도의 DLL이므로
 	//IScenario_enter_handler();
 	//curyport = m_Myport;
 	//curyport->pScenario = (void *)this;
@@ -3045,7 +3046,7 @@ extern "C" BOOL APIENTRY DllMain(HMODULE hModule,
 	{
 	case DLL_PROCESS_ATTACH:
 	{
-		
+
 		errno_t result = 0;
 		/**< CRT가 Assertion 다이얼 로그를 출력하지 못하게 함 */
 		_CrtSetReportMode(_CRT_ASSERT, 0);
@@ -3074,13 +3075,13 @@ extern "C" BOOL APIENTRY DllMain(HMODULE hModule,
 
 
 /////////////////////////////////////////////////////////////////////////////////////////////
-////                                                                                      
-//// @param     [in]    expression : CRT 함수 내에서 발생한 테스트 실패에 대한 설명 문자열   
-//// [in]    function   : 실패를 발생시킨 CRT 함수 이름                                     
-//// [in]    file       : 소스 파일 이름                                                   
-//// [in]    line       : 에러가 발생한 소스 코드의 행 번호                                 
-//// [out]   pReserved  : 예약어                                                          
-//// @return    void                                                                      
+////
+//// @param     [in]    expression : CRT 함수 내에서 발생한 테스트 실패에 대한 설명 문자열
+//// [in]    function   : 실패를 발생시킨 CRT 함수 이름
+//// [in]    file       : 소스 파일 이름
+//// [in]    line       : 에러가 발생한 소스 코드의 행 번호
+//// [out]   pReserved  : 예약어
+//// @return    void
 //// @note      사용자 정의한 유효 파라미터 핸들러
 //// @note      이 핸들러는 CRT가 유효 파라미터 검사를 수행할 때 기본 핸들러 대신 수행
 /////////////////////////////////////////////////////////////////////////////////////////////

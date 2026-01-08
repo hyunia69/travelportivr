@@ -23,7 +23,7 @@
 #include <iprtrmib.h>
 #include <tlhelp32.h>
 #include <iphlpapi.h>
-#include <afxinet.h>  
+#include <afxinet.h>
 
 #pragma comment(lib, "Iphlpapi.lib")
 
@@ -83,7 +83,8 @@ extern int(*atox)(char *s);
 #define	MSG_INBOUND_LINE	WM_USER + 03
 #define	MSG_ASR_LINE	    WM_USER + 04
 
-#define	PARAINI		".\\KiccPay_Travelport_Test_para.ini"
+// #define	PARAINI		".\\KiccPay_Travelport_Test_para.ini"
+#define	PARAINI		".\\KiccPay_Travelport_para.ini"
 #define MAXCHAN 	240		// 최대 회선 수
 //#define MAXCHAN 	120		// 최대 회선 수
 
@@ -112,8 +113,10 @@ extern int(*atox)(char *s);
 #define	SERVER_PORT		(API_PORT) + 0
 
 #define     KICC_CLIENT_IP "211.196.157.123"
-#define     KICC_MAII_ID   "T5102001"
-#define     KICC_GW_URL    "testgw.easypay.co.kr"
+//#define     KICC_MAII_ID   "T5102001"
+//#define     KICC_GW_URL    "testgw.easypay.co.kr"
+#define     KICC_MAII_ID   "05593362"
+#define     KICC_GW_URL    "gw.easypay.co.kr"
 #define     KICC_GW_PORT   "80"
 #define     KICC__CERT_FILE "./cert/pg_cert.pem"
 #define     KICC_LOG        "./KiccLog"
@@ -441,7 +444,7 @@ int FindWebAddresss(int ch, char * szAuthLine)
 	return dwRet;
 }
 
-// 결제 요청 쓰레드용 함수 
+// 결제 요청 쓰레드용 함수
 unsigned int __stdcall KiccArsPayProcess(void *data)
 {
 	int			ch;
@@ -502,7 +505,7 @@ unsigned int __stdcall KiccArsPayProcess(void *data)
 	// [TEST CODE] 마지막 주문 실패 테스트
 	// 테스트 완료 후 이 블록 전체를 삭제하세요
 	// ========================================
-#define TEST_LAST_ORDER_FAIL  // 이 줄을 주석 처리하면 테스트 비활성화
+//#define TEST_LAST_ORDER_FAIL  // 이 줄을 주석 처리하면 테스트 비활성화
 #ifdef TEST_LAST_ORDER_FAIL
 	if (pScenario->m_bMultiOrderMode && pScenario->m_MultiOrders.nOrderCount > 1) {
 		// 마지막 주문인지 확인 (m_nCurrentOrderIdx는 0부터 시작)
@@ -646,7 +649,7 @@ unsigned int __stdcall KiccArsPayProcess(void *data)
 	char    szCardTxType[2 + 1] = "20";  // [필수]처리종류 승인(20)
 	char    szReqType[1 + 1] = "0";      // [필수]카드결제 전문 암호화 (0:SSL 1:ISP, 2:안심 결제)
 	char    szNoint[2 + 1] = "00";       // [필수]무이자여부(일반:00, 무이자:02
-	char    szCertType[1 + 1] = "4";     // [필수]인증여부 (인증:0 , 비인증:1, 카유비:4) , 비밀번호 인증 하지 않음(1)으로 한다.
+	char    szCertType[1 + 1] = "0";     // [필수]인증여부 (인증:0 , 비인증:1, 카유비:0) , 비밀번호 인증 하지 않음(1)으로 한다.
 	char    szWcc[1 + 1] = "@";          // [필수]wcc
 	char    szUserType[1 + 1] = "0";     // [선택]카드구분 : 인증여부에 따라 필수(개인: 0, 법인:1)
 
@@ -675,12 +678,13 @@ unsigned int __stdcall KiccArsPayProcess(void *data)
 	memset(pScenario->m_CardResInfo.REPLY_MESSAGE, 0x00, sizeof(pScenario->m_CardResInfo.REPLY_MESSAGE));
 
 	// 결제정보 DATA
-	lplfEP_CLI_DLL__set_entry("pay_data", szReqData, sizeof(szReqData) - 1); // 결제 요청 
+	lplfEP_CLI_DLL__set_entry("pay_data", szReqData, sizeof(szReqData) - 1); // 결제 요청
 	lplfEP_CLI_DLL__set_entry("common", szReqData, sizeof(szReqData) - 1);   // 결제 요청 전문의 공통부
 
 	lplfEP_CLI_DLL__set_value("tot_amt", szAmount, M_EP_PK__DELI__US__C, szReqData, sizeof(szReqData) - 1);    //결제할 금액 설정
 	lplfEP_CLI_DLL__set_value("currency", szCurrency, M_EP_PK__DELI__US__C, szReqData, sizeof(szReqData) - 1);
 	lplfEP_CLI_DLL__set_value("client_ip", szClientIP, M_EP_PK__DELI__US__C, szReqData, sizeof(szReqData) - 1);
+	lplfEP_CLI_DLL__set_value("join_cd", "JC29", M_EP_PK__DELI__US__C, szReqData, sizeof(szReqData) - 1);
 	// 구분 문자
 	lplfEP_CLI_DLL__set_delim(M_EP_PK__DELI__RS__C, szReqData, sizeof(szReqData) - 1);
 
@@ -727,7 +731,7 @@ unsigned int __stdcall KiccArsPayProcess(void *data)
 	if (strcmp(pScenario->m_szterminal_id, /*"05112158"*/"05534047") == EQUAL)
 	{
 		memcpy(szOrder_no, pScenario->m_szorder_no, 12); //참좋은여행사를 위한 주문번호 처리 가맹점 주문번호 12자리만 전송
-		memcpy(szDefine3, pScenario->m_szorder_no, sizeof(szDefine3) - 1); // 참좋은 여행사 특별 (원래 발행)주문번호 
+		memcpy(szDefine3, pScenario->m_szorder_no, sizeof(szDefine3) - 1); // 참좋은 여행사 특별 (원래 발행)주문번호
 
 		lplfEP_CLI_DLL__set_value("order_no", szOrder_no, M_EP_PK__DELI__US__C, szReqData, sizeof(szReqData) - 1); //참좋은여행사를 위한 주문번호 처리 가맹점 주문번호 12자리만 전송
 	}
@@ -855,7 +859,7 @@ unsigned int __stdcall KiccArsPayCancleProcess(void *data)
 
 	GetPrivateProfileString("KICCPAY", "KICC_GW_URL", KICC_GW_URL, szGwUrl, sizeof(szGwUrl), PARAINI);
 	GetPrivateProfileString("KICCPAY", "KICC_GW_PORT", KICC_GW_PORT, szGWport, sizeof(szGWport), PARAINI);
-	
+
 	// 게이트웨이 URL 확인 로그
 	eprintf("[KICC] 게이트웨이 URL: %s, 포트: %s", szGwUrl, szGWport);
 
@@ -991,7 +995,7 @@ unsigned int __stdcall KiccArsPayCancleProcess(void *data)
 }
 
 int  KiccPaymemt_host(int holdm)
-{//초기화	
+{//초기화
 	CKICC_Scenario *pScenario = (CKICC_Scenario *)((*lpmt)->pScenario);
 
 	if (holdm != 0) {
@@ -1016,7 +1020,7 @@ int  KiccPaymemt_host(int holdm)
 
 int  KiccPaymemtCancle_host(int holdm)
 {
-	//초기화	
+	//초기화
 	CKICC_Scenario *pScenario = (CKICC_Scenario *)((*lpmt)->pScenario);
 
 	if (holdm != 0) {
