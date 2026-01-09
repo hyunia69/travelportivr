@@ -563,11 +563,11 @@ unsigned int __stdcall KiccArsPayProcess(void *data)
 			pScenario->m_CardInfo.ExpireDt,
 			pScenario->m_CardInfo.InstPeriod);
 
-		// 카드번호 길이 검증
-		if (strlen(pScenario->m_CardInfo.Card_Num) != 16) {
+		// 카드번호 길이 검증 (15~16자리 허용)
+		int nCardLen = strlen(pScenario->m_CardInfo.Card_Num);
+		if (nCardLen < 15 || nCardLen > 16) {
 			info_printf(ch, "[KICC] 카드번호 길이 오류");
-			eprintf("[KICC] 카드번호 길이 오류: %d자리 (기대: 16자리)",
-				strlen(pScenario->m_CardInfo.Card_Num));
+			eprintf("[KICC] 카드번호 길이 오류: %d자리 (기대: 15~16자리)", nCardLen);
 			(*port)[ch].ppftbl[POST_NET].postcode = HI_OK;
 			pScenario->m_PaySysCd = -1;
 			KiccNone_Pay_Quithostio("KiccArsPayProcess 카드번호 길이 오류", ch);

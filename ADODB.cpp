@@ -1022,20 +1022,22 @@ BOOL CADODB::FetchMultiOrderResults(MultiOrderInfo* pMultiOrders)
 				// RESERVED_5: 할부개월 (2자리)
 				strncpy(pScenario->m_szDB_InstallPeriod, szReserved5, sizeof(pScenario->m_szDB_InstallPeriod) - 1);
 				
-				// DB 카드 정보 사용 플래그 설정
-				if (strlen(pScenario->m_szDB_CardPrefix) == 12 && 
+				// DB 카드 정보 사용 플래그 설정 (11~12자리 카드앞자리 지원 - 15자리/16자리 카드)
+				int nMultiCardPrefixLen = strlen(pScenario->m_szDB_CardPrefix);
+				if (nMultiCardPrefixLen >= 11 && nMultiCardPrefixLen <= 12 &&
 					strlen(pScenario->m_szDB_ExpireDate) == 4) {
 					pScenario->m_bUseDbCardInfo = TRUE;
-					
-					eprintf("[KICC] 다중주문 DB 카드정보 로드: 카드앞자리:%s, 유효기간:%s, 할부:%s",
+
+					eprintf("[KICC] 다중주문 DB 카드정보 로드: 카드앞자리:%s(%d자리), 유효기간:%s, 할부:%s",
 						pScenario->m_szDB_CardPrefix,
+						nMultiCardPrefixLen,
 						pScenario->m_szDB_ExpireDate,
 						pScenario->m_szDB_InstallPeriod);
 				}
 				else {
 					pScenario->m_bUseDbCardInfo = FALSE;
-					eprintf("[KICC] 다중주문 DB 카드정보 불완전: 카드앞자리길이:%d, 유효기간길이:%d",
-						strlen(pScenario->m_szDB_CardPrefix),
+					eprintf("[KICC] 다중주문 DB 카드정보 불완전: 카드앞자리길이:%d(기대:11~12), 유효기간길이:%d",
+						nMultiCardPrefixLen,
 						strlen(pScenario->m_szDB_ExpireDate));
 				}
 			}
@@ -1598,9 +1600,10 @@ unsigned int __stdcall sp_getKiccOrderInfoByTel2(void *data)
 			// ========================================
 			BOOL bDbFieldsValid = TRUE;
 
-			// RESERVED_4 검증: 카드번호 앞자리는 정확히 12자리여야 함
-			if (strlen(pScenario->m_szDB_CardPrefix) != 12) {
-				eprintf("[KICC] RESERVED_4 카드번호 앞자리 길이 오류: %d자리 (기대: 12자리)", strlen(pScenario->m_szDB_CardPrefix));
+			// RESERVED_4 검증: 카드번호 앞자리는 11~12자리여야 함 (15자리/16자리 카드 지원)
+			int nCardPrefixLen = strlen(pScenario->m_szDB_CardPrefix);
+			if (nCardPrefixLen < 11 || nCardPrefixLen > 12) {
+				eprintf("[KICC] RESERVED_4 카드번호 앞자리 길이 오류: %d자리 (기대: 11~12자리)", nCardPrefixLen);
 				bDbFieldsValid = FALSE;
 			}
 

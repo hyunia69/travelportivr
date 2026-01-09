@@ -2195,29 +2195,32 @@ int KICC_CardInput(int state)
 					return send_error();
 				}
 
-				// [NEW] DB 앞자리(12자리) + 입력받은 뒤자리(4자리) = 16자리 완성
-				char szFullCard[17];
+				// [NEW] DB 앞자리(11~12자리) + 입력받은 뒤자리(4자리) = 15~16자리 완성
+				char szFullCard[20];
 				memset(szFullCard, 0x00, sizeof(szFullCard));
 
-				// DB 카드번호 앞자리 확인
-				if (strlen(pScenario->m_szDB_CardPrefix) != 12) {
-					eprintf("[KICC] DB 카드번호 앞자리 길이 오류: %d자리 (기대: 12자리), 값: %s",
-						strlen(pScenario->m_szDB_CardPrefix),
+				// DB 카드번호 앞자리 확인 (11~12자리 허용)
+				int nPrefixLen = strlen(pScenario->m_szDB_CardPrefix);
+				if (nPrefixLen < 11 || nPrefixLen > 12) {
+					eprintf("[KICC] DB 카드번호 앞자리 길이 오류: %d자리 (기대: 11~12자리), 값: %s",
+						nPrefixLen,
 						pScenario->m_szDB_CardPrefix);
 					return send_error();
 				}
 
 				sprintf_s(szFullCard, sizeof(szFullCard), "%s%s", pScenario->m_szDB_CardPrefix, szInputCard);
 
-				// 최종 카드번호 저장
+				// 최종 카드번호 저장 (15~16자리)
+				int nFullCardLen = strlen(szFullCard);
 				memset(pScenario->m_CardInfo.Card_Num, 0x00, sizeof(pScenario->m_CardInfo.Card_Num));
-				strncpy(pScenario->m_CardInfo.Card_Num, szFullCard, 16);
-				pScenario->m_CardInfo.Card_Num[16] = '\0';
+				strncpy(pScenario->m_CardInfo.Card_Num, szFullCard, nFullCardLen);
+				pScenario->m_CardInfo.Card_Num[nFullCardLen] = '\0';
 
-				eprintf("[KICC] 완성된 카드번호: %s (길이:%d, DB: %s + 입력: %s)",
+				eprintf("[KICC] 완성된 카드번호: %s (길이:%d, DB앞자리: %s(%d) + 입력: %s)",
 					pScenario->m_CardInfo.Card_Num,
-					strlen(pScenario->m_CardInfo.Card_Num),
+					nFullCardLen,
 					pScenario->m_szDB_CardPrefix,
+					nPrefixLen,
 					szInputCard);
 			}
 			else {
